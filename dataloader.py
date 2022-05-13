@@ -3,59 +3,53 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 import torchvision
 import os
 
-img_tags = ['jpg', 'jpeg', 'JPEG', 'JPG', 'png', 'PNG']
+IMG_EXT = ['jpg', 'jpeg', 'JPEG', 'JPG', 'png', 'PNG']
+
+MODES = ['train', 'validation']  
+
+TRAIN_VAL_RATIO = 0.99
 
 class RealHazyDataset(Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
     def __init__(self, root, mode):
-        dir_1 = os.path.join(root, 'RTTS', 'JPEGImages')
-        dir_2 = os.path.join(root, 'UnannotatedHazyImages')
+        assert os.isdir(root)
+        assert mode in MODES
 
-        imgset_1 = [os.path.join(dir_1, fn) for fn in os.listdir(dir_1) if any(fn.endswith(img_tags))]
-        imgset_2 = [os.path.join(dir_2, fn) for fn in os.listdir(dir_2) if any(fn.endswith(img_tags))]
+        dir1 = os.path.join(root, 'RTTS', 'JPEGImages')
+        dir2 = os.path.join(root, 'UnannotatedHazyImages')
+
+        imgset1 = [os.path.join(dir1, fn) for fn in os.listdir(dir1) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
+        imgset2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
         
-        imgset = imgset_1 + imgset_2
+        imgset = imgset1 + imgset2
         imgset.sorted()
+        numImg = len(imgset)
+        splitIdx = int(numImg * TRAIN_VAL_RATIO)
+        if mode == 'train':
+            imgset = imgset[:splitIdx]
+        elif mode == 'validation':
+            imgset = imgset[splitIdx:]
 
-        
+        self.imgset = imgset
 
+        print(f'Dataset built - mode {mode}, length {len(self.imgset)}')
 
+        self.resize = torchvision.transforms.Resize(256)
+        self.transform = torchvision.Compose([
+                        torchvision.RandomCrop(256),
+                        torchvision.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                        torchvision.ToTensor(),
+        ])
 
 
     def __getitem__(self, index):
-        fn = self.data[index]
-        import numpy as np
-        import cv2
-        
-        hazy = Image.open(fn['hazy']).convert("RGB")
-        try:
-            clear = Image.open(fn['clear']).convert("RGB")
-        except:
-            clear = Image.open(fn['clear'].replace('.jpg', '.png')).convert("RGB")
-            
-        # depth = Image.open(fn['depth']).convert("L") 
-        if self.mode == 'train':
-            i,j,h,w = transforms.RandomCrop.get_params(hazy, output_size = (512,512))
-            hazy = TF.crop(hazy, i, j, h, w)
-            clear = TF.crop(clear, i, j, h, w)
-            # depth = TF.crop(depth, i, j, h, w)            
-            #data augumentation
-            if self.augment:
-                hazy, clear = augment(hazy, clear)
-                # hazy, clear, depth = augment(hazy, clear, depth)
-
-        # depth = self.depth(self.transform(cv2.imread(fn['hazy'])).unsqueeze(0))
-        # print(hazy.shape, depth.shape)
-
-        # exit()
-        hazy = self.transform(hazy)
-        clear = self.transform(clear)
-
-        # depth = self.transform(depth)
-        return hazy, clear
-        # return hazy, clear, depth 
+        img = Image.Open(self.imgset[index]).conver("RGB")
+        if min(img.size) < 256:
+            img = self.resize(img)
+        img_tensor = self.transform(img)
+        return img_tensor
 
     def __len__(self):
-        return len(self.data)
+        return len(self.imgset)
