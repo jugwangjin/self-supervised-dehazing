@@ -114,21 +114,23 @@ class TrainStepSM(TrainStep):
         super().__init__(f, lambda_aug)
 
     def L2Norm(self, x):
-        return torch.sqrt(torch.mean(torch.pow(x, 2)))
+
+        return torch.sqrt(torch.mean(torch.pow(x, 2)) + 1e-6)
+
 
     def g(self, noise_D, noise_I, noise_C, clean):
         return clean + clean * noise_D + noise_I + noise_C
 
-    def forward(self, img):
+    def forward(self, img, return_package = False):
         noise_D, noise_I, noise_C, clean = self.f(img)
         T = (noise_D + 1).clamp(0, 1)
         A = (noise_I / (1 - T)).clamp(0, 1)
 
         L_con = self.L2Norm(img - self.g(noise_D, noise_I, noise_C, clean))
-
-        clean_noise_D, clean_noise_I, clean_noise_C, clean_clean = self.f(clean)
-        dep_noise_D, dep_noise_I, dep_noise_C, dep_clean = self.f(clean + noise_D * clean)
-        indep_noise_D, indep_noise_I, indep_noise_C, indep_clean = self.f(noise_I + noise_C)
+        
+        clean_noise_D, clean_noise_I, clean_noise_C, clean_clean = self.f(clean.detach())
+        dep_noise_D, dep_noise_I, dep_noise_C, dep_clean = self.f((clean + noise_D * clean).detach())
+        indep_noise_D, indep_noise_I, indep_noise_C, indep_clean = self.f((noise_I + noise_C).detach())
 
         L_id = self.L2Norm(clean_clean - clean) + self.L2Norm(dep_clean - clean) + \
                 self.L2Norm(dep_noise_D - noise_D) + self.L2Norm(indep_noise_I - noise_I) + self.L2Norm(indep_noise_C - noise_C)
@@ -149,8 +151,8 @@ class TrainStepSM(TrainStep):
                 with torch.no_grad():
                     aug_noise_D_input = T_aug - 1
                     aug_noise_I_input = A_aug * (1 - T_aug)
-                    aug_noise_C_input = noise_C * random.choice(C_coeff)
-                    img_aug = self.g(aug_noise_D_input, aug_noise_I_input, aug_noise_C_input, clean)
+                    aug_noise_C_input = (noise_C * random.choice(C_coeff))
+                    img_aug = self.g(aug_noise_D_input, aug_noise_I_input, aug_noise_C_input, clean).detach()
                 aug_noise_D, aug_noise_I, aug_noise_C, aug_clean = self.f(img_aug)
                 L_aug = L_aug + self.L2Norm(aug_clean - clean) + self.L2Norm(aug_noise_D - aug_noise_D_input) +\
                                 self.L2Norm(aug_noise_C - aug_noise_C_input) + self.L2Norm(aug_noise_I - aug_noise_I_input)
@@ -159,5 +161,62 @@ class TrainStepSM(TrainStep):
                 1e-3 * self.L2Norm(T - self.blur(T)) + 1e-1 * self.L2Norm(A - self.blur(A))
 
         L_total = L_con + L_id + L_zero + L_reg + self.lambda_aug * L_aug
+        if return_package:
+            return L_total, {"L_con": L_con, "L_id": L_id, "L_zero": L_zero, "L_reg": L_reg, "L_aug": L_aug}
+        return L_total
+ 
+ 
+class TrainStepExplicitSM(TrainStep):
+    def __init__(self, f, lambda_aug=0.1):
+        super().__init__(f, lambda_aug)
+
+    def L2Norm(self, x):
+
+        return torch.sqrt(torch.mean(torch.pow(x, 2)) + 1e-6)
+
+
+    def g(self, T, A, C, clean):
+        return T * clean + A * (1 - T) + C
+
+    def forward(self, img, return_package = False):
+        T, A, C, clean = self.f(img)
+
+        L_con = self.L2Norm(img - self.g(T, A, C, clean))
+        
+        clean_noise_D, clean_noise_I, clean_noise_C, clean_clean = self.f(clean.detach())
+        dep_noise_D, dep_noise_I, dep_noise_C, dep_clean = self.f((clean + noise_D * clean).detach())
+        indep_noise_D, indep_noise_I, indep_noise_C, indep_clean = self.f((noise_I + noise_C).detach())
+
+        L_id = self.L2Norm(clean_clean - clean) + self.L2Norm(dep_clean - clean) + \
+                self.L2Norm(dep_noise_D - noise_D) + self.L2Norm(indep_noise_I - noise_I) + self.L2Norm(indep_noise_C - noise_C)
+
+        L_zero = self.L2Norm(clean_noise_D) + self.L2Norm(clean_noise_I) + self.L2Norm(clean_noise_C) + \
+                self.L2Norm(indep_clean) + self.L2Norm(dep_noise_I) + self.L2Norm(dep_noise_C)
+
+        with torch.no_grad():
+            T_aug = (torch.amax(T, dim=(1,2,3), keepdim=True) - T + torch.amin(T, dim=(1,2,3), keepdim=True)).detach()
+            A_aug = (A * (torch.rand(A.size(0), A.size(1), 1, 1, device=A.device) * 0.2 + 0.9)).clamp(0, 1).detach()  # scale A by 0.9 ~ 1.1
+        
+        L_aug = 0
+        T_augs = [T, T_aug]
+        A_augs = [A, A_aug]
+        C_coeff = [1, -1]
+        for T_aug in T_augs:
+            for A_aug in A_augs:
+                with torch.no_grad():
+                    aug_noise_D_input = T_aug - 1
+                    aug_noise_I_input = A_aug * (1 - T_aug)
+                    aug_noise_C_input = (noise_C * random.choice(C_coeff))
+                    img_aug = self.g(aug_noise_D_input, aug_noise_I_input, aug_noise_C_input, clean).detach()
+                aug_noise_D, aug_noise_I, aug_noise_C, aug_clean = self.f(img_aug)
+                L_aug = L_aug + self.L2Norm(aug_clean - clean) + self.L2Norm(aug_noise_D - aug_noise_D_input) +\
+                                self.L2Norm(aug_noise_C - aug_noise_C_input) + self.L2Norm(aug_noise_I - aug_noise_I_input)
+
+        L_reg = self.L2Norm(self.variance(img) - self.variance(noise_C)) + \
+                1e-3 * self.L2Norm(T - self.blur(T)) + 1e-1 * self.L2Norm(A - self.blur(A))
+
+        L_total = L_con + L_id + L_zero + L_reg + self.lambda_aug * L_aug
+        if return_package:
+            return L_total, {"L_con": L_con, "L_id": L_id, "L_zero": L_zero, "L_reg": L_reg, "L_aug": L_aug}
         return L_total
  

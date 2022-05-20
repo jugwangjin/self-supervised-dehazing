@@ -76,14 +76,14 @@ class Trainer(torch.nn.Module):
         for epoch in prog_bar:
             prog_bar.set_description(f'[Progress] epoch {epoch}/{self.epochs} - saving at {self.out_dir}')
             train_loss = self.train_epoch()
+            train_losses.append(train_loss)
             self.scheduler.step()
 
             if epoch % self.args["validateevery"] == self.args["validateevery"] - 1:
                 validation_loss = self.validation_epoch()
 
-            train_losses.append(train_loss)
-            while len(validation_losses) < len(train_losses):
-                validation_losses.append(validation_loss)
+                while len(validation_losses) < len(train_losses):
+                    validation_losses.append(validation_loss)
 
             plt.clf()
             plt.plot(train_losses, label='train')
@@ -106,10 +106,12 @@ class Trainer(torch.nn.Module):
         num_samples = 0
         accum_losses = 0
         prog_bar = tqdm(self.train_loader)
+        self.trainer.train()
         for batchIdx, img in enumerate(prog_bar):
             img = img.to(self.args["device"])
-            loss = self.trainer(img).mean()
             self.optimizer.zero_grad()
+            loss, L_package = self.trainer(img, return_package=True)
+            loss = loss.mean()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.trainer.module.f.parameters() if self.args["usedataparallel"]
                                             else self.trainer.f.parameters(), 1)
@@ -117,7 +119,10 @@ class Trainer(torch.nn.Module):
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
 
-            prog_bar.set_description(f'[Train] batch {batchIdx}/{len(prog_bar)} loss {loss:.2f} acc {accum_losses/num_samples:.2f}')
+            desc = f'[Train] loss {loss:.2f} acc {accum_losses/num_samples:.2f}'
+            for k in L_package:
+                desc = desc + f' {k}:{L_package[k].mean():.2f}'
+            prog_bar.set_description(desc)
 
         return accum_losses / num_samples
 
@@ -126,9 +131,11 @@ class Trainer(torch.nn.Module):
         num_samples = 0
         accum_losses = 0
         prog_bar = tqdm(self.val_loader)
+        self.trainer.eval()
         f = self.trainer.module.f if self.args["usedataparallel"] else self.trainer.f
         if self.args["usedataparallel"]:
             f = torch.nn.DataParallel(f)
+        f.eval()
         for batchIdx, img in enumerate(prog_bar):
             img = img.to(self.args["device"])
             loss = self.trainer(img).mean()

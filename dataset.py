@@ -63,7 +63,7 @@ class RESIDEHazyDataset(torch.utils.data.Dataset):
         
         if min(img.size) < self.patch_size:
             img = self.resize(img)
-        if torch.rand(1) < 0.25:
+        if torch.rand(1) < 0.1:
             img = self.randomRotation(img)
         
         img = self.transform(img)
@@ -77,7 +77,7 @@ class RealHazyDataset(torch.utils.data.Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
-    def __init__(self, root, mode, patch_size=128):
+    def __init__(self, root, mode, patch_size=64):
         assert os.path.isdir(root)
         assert mode in MODES
         self.TRAIN_VAL_RATIO = 0.99
@@ -127,7 +127,7 @@ class RealHazyDataset(torch.utils.data.Dataset):
         
         if min(img.size) < self.patch_size:
             img = self.resize(img)
-        if torch.rand(1) < 0.25:
+        if torch.rand(1) < 0.1:
             img = self.randomRotation(img)
         
         img = self.transform(img)

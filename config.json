@@ -23,7 +23,7 @@
         "dataset": "realhaze",
         "epochs": 1000,
         "lr": 5e-5,
-        "batchsize": 64,
+        "batchsize": 16,
         "valbatchsize": 1,
         "numworkers": 4,
         "pinmemory": true,

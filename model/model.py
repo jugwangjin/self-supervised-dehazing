@@ -23,10 +23,10 @@ class GenClean(nn.Module):
             layers.append(nn.ReLU(inplace=True))
         layers.append(nn.Conv2d(in_channels=features, out_channels=channels, kernel_size=1, padding=0))
         self.genclean = nn.Sequential(*layers)
-        for m in self.genclean:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
+        # for m in self.genclean:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
 
     def forward(self, x):
         out = self.genclean(x)
@@ -59,18 +59,18 @@ class GenNoise(nn.Module):
         gen_noise_b.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
         self.gen_noise_b = nn.Sequential(*gen_noise_b)
         
-        for m in self.body:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
-        for m in self.gen_noise_w:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)  
-        for m in self.gen_noise_b:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
+        # for m in self.body:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
+        # for m in self.gen_noise_w:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)  
+        # for m in self.gen_noise_b:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
 	       
     def forward(self, x, weights=None, test=False):
         noise = self.body(x)
@@ -85,64 +85,91 @@ class GenNoise(nn.Module):
         return noise_w, noise_b
  
 
+class GenCleanSM(nn.Module):
+    def __init__(self, channels=3, num_of_layers=17):
+        super(GenCleanSM, self).__init__()
+        kernel_size = 3
+        padding = 1
+        features = 64
+        layers = []
+        layers.append(nn.Conv2d(in_channels=channels, out_channels=features, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
+        layers.append(nn.PReLU(features))
+        for _ in range(num_of_layers-2):
+            layers.append(nn.Conv2d(in_channels=features, out_channels=features, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
+            layers.append(nn.InstanceNorm2d(features))
+            layers.append(nn.PReLU(features))
+        layers.append(nn.Conv2d(in_channels=features, out_channels=channels, kernel_size=1, padding=0))
+        self.genclean = nn.Sequential(*layers)
+        # for m in self.genclean:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
+
+    def forward(self, x):
+        out = self.genclean(x)
+        return out
 
 class GenNoiseSM(nn.Module):
-    def __init__(self, NLayer=10, FSize=64):
+    def __init__(self, NLayer=8, FSize=64):
         super(GenNoiseSM, self).__init__()
         kernel_size = 3
         padding = 1
         m = [nn.Conv2d(3, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'),
-             nn.ReLU(inplace=True)]             
+             nn.PReLU(FSize)]             
         for i in range(NLayer-1):
             m.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
-            m.append(nn.ReLU(inplace=True))        
+            m.append(nn.InstanceNorm2d(FSize))
+            m.append(nn.PReLU(FSize))        
         self.body = nn.Sequential(*m)
         
-        gen_noise_d = []
+        gen_T = []
         for i in range(4):
-            gen_noise_d.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
-            gen_noise_d.append(nn.ReLU(inplace=True))
-        gen_noise_d.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
-        self.gen_noise_d = nn.Sequential(*gen_noise_d)
+            gen_T.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
+            gen_T.append(nn.InstanceNorm2d(FSize))
+            gen_T.append(nn.PReLU(FSize))
+        gen_T.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
+        self.gen_T = nn.Sequential(*gen_T)
 
-        gen_noise_i = []
+        gen_A = []
         for i in range(4):
-            gen_noise_i.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
-            gen_noise_i.append(nn.ReLU(inplace=True))
-        gen_noise_i.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
-        self.gen_noise_i = nn.Sequential(*gen_noise_i)
+            gen_A.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
+            gen_A.append(nn.InstanceNorm2d(FSize))
+            gen_A.append(nn.PReLU(FSize))
+        gen_A.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
+        self.gen_A = nn.Sequential(*gen_A)
 
-        gen_noise_c = []
+        gen_C = []
         for i in range(4):
-            gen_noise_c.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
-            gen_noise_c.append(nn.ReLU(inplace=True))
-        gen_noise_c.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
-        self.gen_noise_c = nn.Sequential(*gen_noise_c)
+            gen_C.append(nn.Conv2d(FSize, FSize, kernel_size=kernel_size, padding=padding, padding_mode='reflect'))
+            gen_C.append(nn.InstanceNorm2d(FSize))
+            gen_C.append(nn.PReLU(FSize))
+        gen_C.append(nn.Conv2d(FSize, 3, kernel_size=1, padding=0))       
+        self.gen_C = nn.Sequential(*gen_C)
         
-        for m in self.body:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
-        for m in self.gen_noise_d:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)  
-        for m in self.gen_noise_i:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
-        for m in self.gen_noise_c:
-            if isinstance(m, nn.Conv2d):
-               nn.init.xavier_uniform(m.weight)
-               nn.init.constant(m.bias, 0)
+        # for m in self.body:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
+        # for m in self.gen_T:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)  
+        # for m in self.gen_A:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
+        # for m in self.gen_C:
+        #     if isinstance(m, nn.Conv2d):
+        #        nn.init.xavier_uniform(m.weight)
+        #        nn.init.constant(m.bias, 0)
 	       
     def forward(self, x, weights=None, test=False):
         noise = self.body(x)
-        noise_d = self.gen_noise_d(noise)
-        noise_i = self.gen_noise_i(noise)       
-        noise_c = self.gen_noise_c(noise)       
+        T = self.gen_T(noise)
+        A = self.gen_A(noise)       
+        C = self.gen_C(noise)       
           
-        return noise_d, noise_i, noise_c
+        return T, A, C
 
 
 
@@ -168,8 +195,8 @@ class SMCVFModel(BaseModel):
         super().__init__()
         self.n_colors = 3
         FSize = 64
-        self.gen_noise = GenNoiseSM(FSize=FSize)
-        self.genclean = GenClean()
+        self.gen_noise = GenNoiseSM()
+        self.genclean = GenCleanSM()
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, weights=None, test=False):                   
@@ -180,5 +207,24 @@ class SMCVFModel(BaseModel):
         A = self.sigmoid(A).clamp(min=1e-2)
         noise_D = T - 1
         noise_I = A * (1 - T)
-        noise_C = C
+        noise_C = C - torch.mean(C, dim=(2,3), keepdim=True)
         return noise_D, noise_I, noise_C, clean
+
+
+class ExplicitSMCVFModel(BaseModel):
+    def __init__(self):
+        super().__init__()
+        self.n_colors = 3
+        FSize = 64
+        self.gen_noise = GenNoiseSM()
+        self.genclean = GenCleanSM()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x, weights=None, test=False):                   
+
+        clean = self.genclean(x)
+        T, A, C = self.gen_noise(x-clean)               
+        T = self.sigmoid(T)
+        A = self.sigmoid(A).clamp(min=1e-2)
+        C = C - torch.mean(C, dim=(2,3), keepdim=True)
+        return T, A, C, clean
