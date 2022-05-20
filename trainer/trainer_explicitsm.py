@@ -1,6 +1,5 @@
 import torch
-from .decompose import Decompose
-from .train_step import TrainStepSM
+from .train_step import TrainStepExplicitSM
 from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use("Agg")
@@ -24,9 +23,9 @@ class Trainer(torch.nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        f = model.SMCVFModel()
+        f = model.ExplicitSMCVFModel()
 
-        trainer = TrainStepSM
+        trainer = TrainStepExplicitSM
 
         self.trainer = torch.nn.DataParallel(trainer(f).to(args["device"])) if args["usedataparallel"] else trainer(f).to(args["device"])
         
@@ -64,9 +63,6 @@ class Trainer(torch.nn.Module):
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
         
-        self.decompose = torch.nn.DataParallel(Decompose().to(args["device"])) if args["usedataparallel"] else Decompose().to(args["device"])
-        self.decompose.requires_grad=False
-
     def train(self):
         train_losses = []
         validation_losses = []
@@ -78,7 +74,7 @@ class Trainer(torch.nn.Module):
             train_losses.append(train_loss)
             self.scheduler.step()
 
-            if epoch % self.args["validateevery"] == self.args["validateevery"] - 1:
+            if epoch % self.args["validateevery"] == 0:
                 validation_loss = self.validation_epoch()
 
                 while len(validation_losses) < len(train_losses):
@@ -147,19 +143,15 @@ class Trainer(torch.nn.Module):
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
                 
-            noise_D, noise_I, noise_C, clean = f(img)
-            T = (noise_D + 1).clamp(0, 1)
-            A = (noise_I / (1 - T)).clamp(0, 1)
-            rec = clean + clean * noise_D + noise_I + noise_C
+            T, A, C, clean = f(img)
+            rec = clean * T + A * (1 - T) + C
 
             for idx in range(img.size(0)):
-                torchvision.utils.save_image(noise_D[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_noise_D.png'))
-                torchvision.utils.save_image(noise_I[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_noise_I.png'))
                 torchvision.utils.save_image(clean[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_clean.png'))
                 torchvision.utils.save_image(img[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_img.png'))
                 torchvision.utils.save_image(T[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_T.png'))
                 torchvision.utils.save_image(A[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_A.png'))
-                torchvision.utils.save_image(noise_C[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_noise_C.png'))
+                torchvision.utils.save_image(C[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_C.png'))
                 torchvision.utils.save_image(rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_reconstuct.png'))
             
             prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.2f} acc {accum_losses/num_samples:.2f}')
