@@ -9,43 +9,41 @@ IMG_EXT = ['jpg', 'jpeg', 'JPEG', 'JPG', 'png', 'PNG']
 
 MODES = ['train', 'validation']  
 
-TRAIN_VAL_RATIO = 0.99
-
 class RESIDEHazyDataset(torch.utils.data.Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
-    def __init__(self, root, mode, patchSize=128):
+    def __init__(self, root, mode, patch_size=128):
         self.TRAIN_VAL_RATIO = 0.999
         assert os.path.isdir(root)
         assert mode in MODES
 
-        self.patchSize = patchSize
+        self.patch_size = patch_size
         self.mode = mode
 
         dir2 = os.path.join(root, 'train', 'OTS', 'haze')
 
-        imgset2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
+        img_set2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
         
-        imgset = imgset2
-        sorted(imgset)
-        numImg = len(imgset)
-        splitIdx = int(numImg * self.TRAIN_VAL_RATIO)
+        img_set = img_set2
+        sorted(img_set)
+        num_img = len(img_set)
+        split_idx = int(num_img * self.TRAIN_VAL_RATIO)
         random.seed(20202464)
-        random.shuffle(imgset)
+        random.shuffle(img_set)
         if mode == 'train':
-            imgset = imgset[:splitIdx]
+            img_set = img_set[:split_idx]
         elif mode == 'validation':
-            imgset = imgset[splitIdx:]
+            img_set = img_set[split_idx:]
 
-        self.imgset = imgset
+        self.img_set = img_set
 
-        print(f'Dataset built - mode {mode}, length {len(self.imgset)}')
+        print(f'Dataset built - mode {mode}, length {len(self.img_set)}')
 
-        self.resize = torchvision.transforms.Resize(self.patchSize)
+        self.resize = torchvision.transforms.Resize(self.patch_size)
         if mode == 'train':
             self.transform = torchvision.transforms.Compose([
-                            torchvision.transforms.RandomCrop(self.patchSize),
+                            torchvision.transforms.RandomCrop(self.patch_size),
                             torchvision.transforms.RandomHorizontalFlip(p=0.1),
                             torchvision.transforms.RandomVerticalFlip(p=0.1),
                             torchvision.transforms.ToTensor(),
@@ -59,11 +57,11 @@ class RESIDEHazyDataset(torch.utils.data.Dataset):
         return torchvision.transforms.functional.rotate(sample, random.choice([90, 180, 270]))
 
     def __getitem__(self, index):
-        img = Image.open(self.imgset[index]).convert("RGB")
+        img = Image.open(self.img_set[index]).convert("RGB")
         if not self.mode == 'train':
             return self.transform(img)
         
-        if min(img.size) < self.patchSize:
+        if min(img.size) < self.patch_size:
             img = self.resize(img)
         if torch.rand(1) < 0.25:
             img = self.randomRotation(img)
@@ -72,43 +70,44 @@ class RESIDEHazyDataset(torch.utils.data.Dataset):
         return img
 
     def __len__(self):
-        return len(self.imgset)
+        return len(self.img_set)
 
 
 class RealHazyDataset(torch.utils.data.Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
-    def __init__(self, root, mode, patchSize=64):
+    def __init__(self, root, mode, patch_size=128):
         assert os.path.isdir(root)
         assert mode in MODES
+        self.TRAIN_VAL_RATIO = 0.99
 
-        self.patchSize = patchSize
+        self.patch_size = patch_size
         self.mode = mode
 
         dir1 = os.path.join(root, 'test', 'RTTS', 'JPEGImages')
         dir2 = os.path.join(root, 'test', 'UnannotatedHazyImages')
 
-        imgset1 = [os.path.join(dir1, fn) for fn in os.listdir(dir1) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
-        imgset2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
+        img_set1 = [os.path.join(dir1, fn) for fn in os.listdir(dir1) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
+        img_set2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
         
-        imgset = imgset1 + imgset2
-        sorted(imgset)
-        numImg = len(imgset)
-        splitIdx = int(numImg * TRAIN_VAL_RATIO)
+        img_set = img_set1 + img_set2
+        sorted(img_set)
+        num_img = len(img_set)
+        split_idx = int(num_img * self.TRAIN_VAL_RATIO)
         if mode == 'train':
-            imgset = imgset[:splitIdx]
+            img_set = img_set[:split_idx]
         elif mode == 'validation':
-            imgset = imgset[splitIdx:]
+            img_set = img_set[split_idx:]
 
-        self.imgset = imgset
+        self.img_set = img_set
 
-        print(f'Dataset built - mode {mode}, length {len(self.imgset)}')
+        print(f'Dataset built - mode {mode}, length {len(self.img_set)}')
 
-        self.resize = torchvision.transforms.Resize(self.patchSize)
+        self.resize = torchvision.transforms.Resize(self.patch_size)
         if mode == 'train':
             self.transform = torchvision.transforms.Compose([
-                            torchvision.transforms.RandomCrop(self.patchSize),
+                            torchvision.transforms.RandomCrop(self.patch_size),
                             torchvision.transforms.RandomHorizontalFlip(p=0.1),
                             torchvision.transforms.RandomVerticalFlip(p=0.1),
                             torchvision.transforms.ToTensor(),
@@ -122,11 +121,11 @@ class RealHazyDataset(torch.utils.data.Dataset):
         return torchvision.transforms.functional.rotate(sample, random.choice([90, 180, 270]))
 
     def __getitem__(self, index):
-        img = Image.open(self.imgset[index]).convert("RGB")
+        img = Image.open(self.img_set[index]).convert("RGB")
         if not self.mode == 'train':
             return self.transform(img)
         
-        if min(img.size) < self.patchSize:
+        if min(img.size) < self.patch_size:
             img = self.resize(img)
         if torch.rand(1) < 0.25:
             img = self.randomRotation(img)
@@ -135,4 +134,4 @@ class RealHazyDataset(torch.utils.data.Dataset):
         return img
 
     def __len__(self):
-        return len(self.imgset)
+        return len(self.img_set)

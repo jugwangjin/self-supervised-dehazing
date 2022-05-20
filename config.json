@@ -9,12 +9,14 @@
         "numworkers": 4,
         "pinmemory": true,
         "seed": 20202464,
-        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/reside/baseline",
+        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/reside/SMCVF",
         "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_beta",
         "device": "cuda",
         "usedataparallel": true,
         "validateevery": 2,
-        "scheduler_step": 1
+        "scheduler_step": 1,
+        "model": "SMCVFModel",
+        "trainer": "TrainStepSM"
     },
     "realhaze":
     {
@@ -26,11 +28,13 @@
         "numworkers": 4,
         "pinmemory": true,
         "seed": 20202464,
-        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/realhaze/baseline",
+        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/realhaze/SMCVF",
         "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_beta",
         "device": "cuda",
         "usedataparallel": true,
         "validateevery": 5,
-        "scheduler_step": 5
+        "scheduler_step": 5,
+        "model": "SMCVFModel",
+        "trainer": "TrainStepSM"
     }
 }
