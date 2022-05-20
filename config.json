@@ -1,0 +1,36 @@
+{
+    "reside":
+    {
+        "dataset": "reside",
+        "epochs": 100,
+        "lr": 5e-5,
+        "batchsize": 32,
+        "valbatchsize": 1,
+        "numworkers": 4,
+        "pinmemory": true,
+        "seed": 20202464,
+        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/reside/baseline",
+        "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_beta",
+        "device": "cuda",
+        "usedataparallel": true,
+        "validateevery": 2,
+        "scheduler_step": 1
+    },
+    "realhaze":
+    {
+        "dataset": "realhaze",
+        "epochs": 1000,
+        "lr": 5e-5,
+        "batchsize": 64,
+        "valbatchsize": 1,
+        "numworkers": 4,
+        "pinmemory": true,
+        "seed": 20202464,
+        "outdir": "/data1/gwangjin/gwangjin/CVF-dehazing/realhaze/baseline",
+        "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_beta",
+        "device": "cuda",
+        "usedataparallel": true,
+        "validateevery": 5,
+        "scheduler_step": 5
+    }
+}

@@ -17,3 +17,15 @@ class Decompose(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.blur = BoxBlur()
+
+    def forward(self, noiseD, noiseI, clean):
+        B, C, H, W = noiseD.shape
+        T = noiseD + 1
+        TAug = (torch.amax(T, dim=(1,2,3), keepdim=True) - T + torch.amin(T, dim=(1,2,3), keepdim=True) - 1)
+        smoothedNoiseI = self.blur(noiseI)
+        captureNoise = noiseI - smoothedNoiseI
+
+        # A = 0/
+        A = torch.nan_to_num(smoothedNoiseI / (- noiseD), nan=1.0).clamp(0, 1)
+
+        return T, A, captureNoise

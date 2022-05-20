@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
 import torch
 import torch.nn as nn
-from base import BaseModel
+from base.base_model import BaseModel
 
 class GenClean(nn.Module):
     def __init__(self, channels=3, num_of_layers=17):
