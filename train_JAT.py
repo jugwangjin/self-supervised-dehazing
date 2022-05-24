@@ -1,7 +1,7 @@
 import os
 # config
 import argparse
-from trainer.trainer import Trainer
+from trainer.trainer_JAT import Trainer
 import json 
 
 def main(args):

@@ -77,7 +77,7 @@ class RealHazyDataset(torch.utils.data.Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
-    def __init__(self, root, mode, patch_size=64):
+    def __init__(self, root, mode, patch_size=128):
         assert os.path.isdir(root)
         assert mode in MODES
         self.TRAIN_VAL_RATIO = 0.99

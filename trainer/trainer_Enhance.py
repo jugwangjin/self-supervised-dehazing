@@ -1,5 +1,5 @@
 import torch
-from .train_step import TrainStepExplicitSM
+from .train_step import TrainStep_Enhance
 from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use("Agg")
@@ -14,6 +14,8 @@ from tqdm import tqdm
 import numpy
 import random
 
+from .utils import guidedfilter2d
+
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
     numpy.random.seed(worker_seed)
@@ -23,9 +25,9 @@ class Trainer(torch.nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        f = model.ExplicitSMCVFModel()
+        f = model.EnhancementNet()
 
-        trainer = TrainStepExplicitSM
+        trainer = TrainStep_Enhance
 
         self.trainer = torch.nn.DataParallel(trainer(f).to(args["device"])) if args["usedataparallel"] else trainer(f).to(args["device"])
         
@@ -63,6 +65,7 @@ class Trainer(torch.nn.Module):
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=9, stride=1, padding=4)
         
     def train(self):
         train_losses = []
@@ -103,6 +106,7 @@ class Trainer(torch.nn.Module):
         accum_losses = 0
         prog_bar = tqdm(self.train_loader)
         self.trainer.train()
+        print(len(self.train_loader), 'num_batch')
         for batchIdx, img in enumerate(prog_bar):
             img = img.to(self.args["device"])
             self.trainer.zero_grad()
@@ -120,11 +124,15 @@ class Trainer(torch.nn.Module):
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
 
-            desc = f'[Train] L {loss:.2f} AC {accum_losses/num_samples:.2f}'
+            desc = f'[Train] L {loss:.4f} AC {accum_losses/num_samples:.4f}'
             for k in L_package:
-                desc = desc + f' {k}:{L_package[k].mean():.2f}'
-            desc = desc + f' g {acc_grad / num_grad:.2f}'
+                desc = desc + f' {k}:{L_package[k].mean():.4f}'
+            desc = desc + f' g {acc_grad / num_grad:.4f}'
             prog_bar.set_description(desc)
+
+            if len(self.train_loader) > 1000 and batchIdx == len(self.train_loader) // 2:
+                self.validation_epoch()
+
 
         return accum_losses / num_samples
 
@@ -144,25 +152,28 @@ class Trainer(torch.nn.Module):
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
                 
-            T, A, C, clean = f(img)
-            rec = clean * T + A * (1 - T) + C
-            T_aug = (torch.amax(T, dim=(1,2,3), keepdim=True) - T + torch.amin(T, dim=(1,2,3), keepdim=True)).detach()
+            T, A, clean = f(img)
+            rec = clean * T + A * (1 - T)
 
-            aug_rec = clean * T_aug + A * (1 - T_aug) + C
-
+            J_rgb_max = torch.amax(clean, dim=1, keepdim=True)
+            J_rgb_min = torch.amin(clean, dim=1, keepdim=True)
+            J_HSV_S = (J_rgb_max - J_rgb_min + 1e-4) / (J_rgb_max + 1e-4)
+            J_HSV_V = J_rgb_max
+            
             for idx in range(img.size(0)):
                 torchvision.utils.save_image(clean[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_clean.png'))
                 torchvision.utils.save_image(img[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_img.png'))
                 torchvision.utils.save_image(T[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_T.png'))
                 torchvision.utils.save_image(A[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_A.png'))
-                torchvision.utils.save_image(C[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_C.png'))
                 torchvision.utils.save_image(rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_reconstuct.png'))
-                torchvision.utils.save_image(aug_rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_augmentation.png'))
+                torchvision.utils.save_image(J_HSV_S[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_HSV_S.png'))
+                torchvision.utils.save_image(J_HSV_V[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_HSV_V.png'))
             
-            prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.2f} acc {accum_losses/num_samples:.2f}')
+            prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.4f} acc {accum_losses/num_samples:.4f}')
 
         return accum_losses / num_samples
 
 
 if __name__=='__main__':
     print('Module file')
+

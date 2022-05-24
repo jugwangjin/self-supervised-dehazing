@@ -1,7 +1,7 @@
 import os
 # config
 import argparse
-from trainer.trainer import Trainer
+from trainer.trainer_Enhance import Trainer
 import json 
 
 def main(args):
@@ -25,7 +25,7 @@ if __name__=='__main__':
     parser.add_argument('--usedataparallel', type=bool, default=True)
     parser.add_argument('--validateevery', type=int, default=5)
     parser.add_argument('--scheduler_step', type=int, default=5)
-    parser.add_argument('--model', type=str, default='CVFModel')
+    parser.add_argument('--model', type=str, default='EnhancementNet')
     parser.add_argument('--trainer', type=str, default='TrainStep')
     parser.add_argument('--config', type=str, default=None)
     args = parser.parse_args()

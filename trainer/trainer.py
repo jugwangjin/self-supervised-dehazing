@@ -1,6 +1,6 @@
 import torch
 from .decompose import Decompose
-import .train_step
+from .train_step import TrainStep
 from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use("Agg")
@@ -24,25 +24,15 @@ class Trainer(torch.nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        if args["model"] == "CVFModel":
-            f = model.CVFModel()
-        elif args["model"] == "SMCVFModel":
-            f = model.SMCVFModel()
-        else:
-            raise Exception(f"Not implemented model {args['model']}")
+        f = model.CVFModel()
 
-        if args["trainer"] == "TrainStep":
-            trainer = train_step.TrainStep
-        elif args["trainer"] == "TrainStepSM":
-            trainer = train_step.TrainStepSM
-        else:
-            raise Exception(f"Not implemented trainer {args['trainer']}")
+        trainer = TrainStep
 
         self.trainer = torch.nn.DataParallel(trainer(f).to(args["device"])) if args["usedataparallel"] else trainer(f).to(args["device"])
-        self.trainer.requires_grad=False
         
-        self.optimizer = torch.optim.Adam(self.trainer.module.f.parameters() if args["usedataparallel"]
-                                        else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9, amsgrad=True)
+        self.optimizer = torch.optim.RAdam(self.trainer.module.f.parameters() if args["usedataparallel"]
+                                        else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9)
+                                        # else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9, amsgrad=True)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args["scheduler_step"], gamma=0.99)
         self.epochs = args["epochs"]
         
@@ -87,13 +77,13 @@ class Trainer(torch.nn.Module):
             prog_bar.set_description(f'[Progress] epoch {epoch}/{self.epochs} - saving at {self.out_dir}')
             train_loss = self.train_epoch()
             self.scheduler.step()
+            train_losses.append(train_loss)
 
-            if epoch % self.args["validateevery"] == self.args["validateevery"] - 1:
+            if epoch % self.args["validateevery"] == 0:
                 validation_loss = self.validation_epoch()
 
-            train_losses.append(train_loss)
-            while len(validation_losses) < len(train_losses):
-                validation_losses.append(validation_loss)
+                while len(validation_losses) < len(train_losses):
+                    validation_losses.append(validation_loss)
 
             plt.clf()
             plt.plot(train_losses, label='train')
@@ -118,17 +108,26 @@ class Trainer(torch.nn.Module):
         prog_bar = tqdm(self.train_loader)
         for batchIdx, img in enumerate(prog_bar):
             img = img.to(self.args["device"])
-            loss = self.trainer(img).mean()
-            self.optimizer.zero_grad()
+            self.trainer.zero_grad()
+            loss, L_package = self.trainer(img, return_package=True)
+            loss = loss.mean()
             loss.backward()
+            num_grad = 0
+            acc_grad = 0
+            for p in self.trainer.module.f.parameters():
+                acc_grad += p.grad.norm()
+                num_grad += 1
             torch.nn.utils.clip_grad_norm_(self.trainer.module.f.parameters() if self.args["usedataparallel"]
                                             else self.trainer.f.parameters(), 1)
             self.optimizer.step()
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
 
-            prog_bar.set_description(f'[Train] batch {batchIdx}/{len(prog_bar)} loss {loss:.2f} acc {accum_losses/num_samples:.2f}')
-
+            desc = f'[Train] L {loss:.4f} AC {accum_losses/num_samples:.4f}'
+            for k in L_package:
+                desc = desc + f' {k}:{L_package[k].mean():.4f}'
+            desc = desc + f' g {acc_grad / num_grad:.8f}'
+            prog_bar.set_description(desc)
         return accum_losses / num_samples
 
     @torch.no_grad()
@@ -147,7 +146,12 @@ class Trainer(torch.nn.Module):
                 
             noiseD, noiseI, clean = f(img)
             T, A, captureNoise = self.decompose(noiseD, noiseI, clean)
+            A = A.clamp(0, 1)
+            T = T.clamp(0, 1)
+            captureNoise = (captureNoise+0.5).clamp(0, 1)
             rec = clean + clean * noiseD + noiseI
+            noiseD = (noiseD + 1).clamp(0, 1)
+            noiseI = noiseI.clamp(0, 1)
 
             for idx in range(img.size(0)):
                 torchvision.utils.save_image(noiseD[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_noiseD.png'))

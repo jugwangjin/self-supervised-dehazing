@@ -1,5 +1,5 @@
 import torch
-from .train_step import TrainStepExplicitSM
+from .train_step import TrainStepJAT
 from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use("Agg")
@@ -23,9 +23,9 @@ class Trainer(torch.nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        f = model.ExplicitSMCVFModel()
+        f = model.JAT_CVFModel()
 
-        trainer = TrainStepExplicitSM
+        trainer = TrainStepJAT
 
         self.trainer = torch.nn.DataParallel(trainer(f).to(args["device"])) if args["usedataparallel"] else trainer(f).to(args["device"])
         
@@ -144,18 +144,17 @@ class Trainer(torch.nn.Module):
             num_samples += img.size(0)
             accum_losses += loss.item() * img.size(0)
                 
-            T, A, C, clean = f(img)
-            rec = clean * T + A * (1 - T) + C
+            T, A, clean = f(img)
+            rec = clean * T + A * (1 - T)
             T_aug = (torch.amax(T, dim=(1,2,3), keepdim=True) - T + torch.amin(T, dim=(1,2,3), keepdim=True)).detach()
 
-            aug_rec = clean * T_aug + A * (1 - T_aug) + C
+            aug_rec = clean * T_aug + A * (1 - T_aug)
 
             for idx in range(img.size(0)):
                 torchvision.utils.save_image(clean[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_clean.png'))
                 torchvision.utils.save_image(img[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_img.png'))
                 torchvision.utils.save_image(T[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_T.png'))
                 torchvision.utils.save_image(A[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_A.png'))
-                torchvision.utils.save_image(C[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_C.png'))
                 torchvision.utils.save_image(rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_reconstuct.png'))
                 torchvision.utils.save_image(aug_rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_augmentation.png'))
             
