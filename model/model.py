@@ -366,7 +366,7 @@ class EnhancementNet(nn.Module):
         resblocks = [ResBlocks(128) for _ in range(16)]
         self.resblocks = nn.Sequential(*resblocks)
         
-        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
 
         self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128))
         self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64))
@@ -424,6 +424,111 @@ class EnhancementNet(nn.Module):
         out = self.unpad(feat6_3, pad)
 
         T, A, J = torch.split(out, 3, dim=1)
+
+        T = self.sigmoid(T)
+        A = self.sigmoid(A)
+        J = J + x
+
+        return T, A, J
+
+
+
+
+        
+class EnhancementAConst(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.num_downs = 2
+        self.downscale = 2**self.num_downs
+
+        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32),)
+        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)
+        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)   
+        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64),)
+        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(128), nn.PReLU(128),)
+        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128),)
+
+        class ResBlocks(nn.Module):
+            def __init__(self, channels):
+                super().__init__()
+                conv1 = nn.Sequential(
+                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
+                                    nn.BatchNorm2d(channels),
+                                    nn.PReLU(channels)
+                            )
+                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
+                self.conv = nn.Sequential(conv1, conv2)
+
+            def forward(self, x):
+                return x + self.conv(x)
+
+        resblocks = [ResBlocks(128) for _ in range(16)]
+        self.resblocks = nn.Sequential(*resblocks)
+        
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+
+        self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128))
+        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64))
+        self.relu5_1 = nn.PReLU(64)
+        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
+        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
+        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32))
+        self.relu6_1 = nn.PReLU(32)
+        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32), nn.PReLU(32))
+        self.conv6_3 = nn.Sequential(nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
+
+        self.sigmoid = nn.Sigmoid() # for T and A
+
+        self.conv_a = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1),
+                                    nn.AdaptiveAvgPool2d((1,1)),
+                                    nn.Conv2d(128, 3, 1, 1))
+
+    def pad(self, x):
+        x_padx = ((self.downscale) - (x.size(2)%(self.downscale))) % (self.downscale)
+        x_pady = ((self.downscale) - (x.size(3)%(self.downscale))) % (self.downscale)
+        x = F.pad(x, [x_pady//2, (x_pady - x_pady//2), 
+                    x_padx // 2, (x_padx - x_padx//2)], mode='reflect')
+
+        return x, (x_padx, x_pady)
+
+    def unpad(self, x, pad):
+
+        x = x[:, :, pad[0] // 2 : x.size(2) - (pad[0] - pad[0] // 2), 
+                pad[1] // 2 : x.size(3) - (pad[1] - pad[1] // 2)]
+        return x             
+
+    def forward(self, x):
+        x_, pad = self.pad(x)
+
+        feat1_1 = self.conv1_1(x_)
+        feat2_1 = self.conv2_1(feat1_1)
+        feat2_2 = self.conv2_2(feat2_1)
+        feat2_3 = self.conv2_3(feat2_2)
+        feat3_1 = self.conv3_1(feat2_3)
+        feat3_2 = self.conv3_2(feat3_1)
+
+        resblocks_out = self.resblocks(feat3_2) + feat3_2 # long range residual term
+
+        A = self.conv_a(resblocks_out)
+
+        feat4_1 = self.conv4_1(resblocks_out)
+        feat4_1 = feat4_1 + feat3_2
+        feat4_1 = self.upsample(feat4_1)
+        feat5_1 = self.conv5_1(feat4_1)
+        feat5_1 = feat5_1 + feat2_3
+        feat5_1 = self.relu5_1(feat5_1)
+        feat5_2 = self.conv5_2(feat5_1)
+        feat5_3 = self.conv5_3(feat5_2)
+        feat5_3 = self.upsample(feat5_3)
+        feat6_1 = self.conv6_1(feat5_3)
+        feat6_1 = feat6_1 + feat1_1
+        feat6_1 = self.relu6_1(feat6_1)
+        feat6_2 = self.conv6_2(feat6_1)
+        feat6_3 = self.conv6_3(feat6_2)
+
+        out = self.unpad(feat6_3, pad)
+
+        T, J = torch.split(out, 3, dim=1)
 
         T = self.sigmoid(T)
         A = self.sigmoid(A)

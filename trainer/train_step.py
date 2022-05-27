@@ -357,13 +357,13 @@ class TrainStepJAT_RESIDE(TrainStep):
  
 
 class TrainStep_Enhance(TrainStep):
-    def __init__(self, f, lambda_aug=0.1, lambda_prior=0.1):
+    def __init__(self, f, lambda_aug=1, lambda_prior=1):
         super().__init__(f, lambda_aug)
-        self.sl1 = torch.nn.L1Loss()
+        self.sl1 = torch.nn.SmoothL1Loss()
         self.lambda_prior=0.1
-        self.maxpool = torch.nn.MaxPool2d(kernel_size=7, stride=1, padding=3)
-        self.large_boxblur = BoxBlur(kernel_size=11)
-        self.large_boxblur_1 = BoxBlur(channels=1, kernel_size=11)
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+        self.large_boxblur = BoxBlur(kernel_size=5)
+        self.large_boxblur_1 = BoxBlur(channels=1, kernel_size=5)
 
     def Sl1(self, x):
         return self.sl1(x, torch.zeros_like(x))
@@ -371,9 +371,124 @@ class TrainStep_Enhance(TrainStep):
     def g(self, T, A, clean):
         return T * clean + A * (1 - T)
 
-    def dcp(self, img):
-        min_patch = -self.maxpool(-img)
-        T_rough = torch.amin(min_patch, dim=1, keepdim=True)
+    def dcp(self, img, A):
+        min_patch = -self.maxpool(-img / A.clamp(min=1e-1))
+        T_rough = 1 - torch.amin(min_patch, dim=1, keepdim=True)
+        return T_rough
+
+    def TV(self, x):
+        TV_x = (x[:, :, 1:, :] - x[:, :, :-1, :]).abs().mean()
+        TV_y = (x[:, :, :, 1:] - x[:, :, :, :-1]).abs().mean()
+
+        return TV_x + TV_y
+
+    def get_hsv(self, img, eps=1e-7):
+        hue = torch.Tensor(img.shape[0], img.shape[2], img.shape[3]).to(img.device)
+
+        img_max = img.max(1)[0]
+        img_min = img.min(1)[0]
+
+        hue[ img[:,2]==img_max ] = 4.0 + ( (img[:,0]-img[:,1]) / ( img_max - img_min + eps) ) [ img[:,2]==img_max ]
+        hue[ img[:,1]==img_max ] = 2.0 + ( (img[:,2]-img[:,0]) / ( img_max - img_min + eps) ) [ img[:,1]==img_max ]
+        hue[ img[:,0]==img_max ] = (0.0 + ( (img[:,1]-img[:,2]) / ( img_max - img_min + eps) ) [ img[:,0]==img_max ]) % 6
+
+        hue[img_min==img_max] = 0.0
+        hue = hue/6
+
+        saturation = ( img_max - img_min ) / ( img_max + eps )
+        saturation[ img_max==0 ] = 0
+
+        value = img_max
+        return hue, saturation, value
+        
+    def get_uv(self, img):
+        r = img[:, 0:1]
+        g = img[:, 1:2]
+        b = img[:, 2:3]
+
+        delta = 0.5
+        y = 0.299 * r + 0.587 * g + 0.114 * b
+        u = (b - y) * 0.564 + delta
+        v = (r - y) * 0.713 + delta
+
+        return torch.cat((u, v), dim=1)
+
+    def forward(self, img, return_package = False):
+        T, A, J = self.f(img)
+
+        L_recon = self.Sl1(img - self.g(T, A, J))
+
+        J_h, J_s, J_v = self.get_hsv(J)
+        J_uv = self.get_uv(J)
+        img_uv = self.get_uv(img)
+
+        # instead of guided filtering which requires large computation, blur  dcp output 
+        # dcp = self.large_boxblur_1(self.dcp(img))
+        dcp = self.dcp(img, A)
+        # L_prior = self.Sl1((self.large_boxblur(T) - dcp)) + \
+        L_prior = self.Sl1((self.large_boxblur(T) - self.large_boxblur_1(dcp))) + \
+                1e-1 * self.Sl1(self.TV(J)) +\
+                1e-1 * self.Sl1(J_s - J_v) +\
+                1e-1 * self.Sl1(J_uv - img_uv)
+                
+        clean_T, clean_A, clean_J = self.f(J)
+
+        L_clear = self.Sl1(J - clean_J)
+
+        # A_T, A_A, A_J = self.f(A)
+
+        # L_A = self.Sl1(A_A - A) + self.Sl1(A_J)
+
+        T_augs = []
+        T_augs.append(torch.ones_like(T))
+        T_augs.append(T)
+        T_augs.append(1-T*0.95)
+        T_augs.append((torch.amax(T, dim=(2,3), keepdim=True) - T + torch.amin(T, dim=(2,3), keepdim=True)))
+        T_augs.append((T + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3).clamp(0.05, 1))
+        
+        L_aug = 0
+        for T_aug in T_augs:
+            A_aug = (A + (torch.randn(A.size(0), 1, 1, 1, device=A.device)*0.1)).clamp(0, 1)
+            img_aug = J * T_aug + A_aug * (1 - T_aug)
+            aug_T, aug_A, aug_J = self.f(img_aug)
+            L_aug = L_aug + self.Sl1(aug_J - J) + self.Sl1(aug_T - T_aug) +\
+                            self.Sl1(aug_A - A_aug)
+
+
+        L_reg = self.Sl1(A - self.blur(A)) + \
+                1e-4 * self.Sl1(A - 1) + \
+                1e-1 * self.Sl1(T - self.blur(T)) 
+
+        L_total = L_recon + self.lambda_prior * L_prior + L_clear + self.lambda_aug * L_aug + L_reg 
+        if return_package:
+            return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clear, "L_a": L_aug, "L_r": L_reg}
+        return L_total
+ 
+
+
+ 
+
+
+
+ 
+class TrainStep_Enhance_AConst(TrainStep):
+    def __init__(self, f, lambda_aug=1, lambda_prior=1):
+        super().__init__(f, lambda_aug)
+        self.sl1 = torch.nn.SmoothL1Loss()
+        self.lambda_prior=0.1
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+        self.large_boxblur = BoxBlur(kernel_size=5)
+        self.large_boxblur_1 = BoxBlur(channels=1, kernel_size=5)
+
+    def Sl1(self, x):
+        return self.sl1(x, torch.zeros_like(x))
+
+    def g(self, T, A, clean):
+        return T * clean + A * (1 - T)
+
+    def dcp(self, img, A):
+        min_patch = -self.maxpool(-img / A.clamp(min=1e-1))
+        T_rough = 1 - torch.amin(min_patch, dim=1, keepdim=True)
         return T_rough
 
     def TV(self, x):
@@ -393,38 +508,38 @@ class TrainStep_Enhance(TrainStep):
         J_HSV_V = J_rgb_max
 
         # instead of guided filtering which requires large computation, blur  dcp output 
-        dcp = self.large_boxblur_1(self.dcp(img))
-        L_prior = self.Sl1((self.large_boxblur(T) - dcp) * dcp) + \
-                self.Sl1((J-img).clamp(min=0)) + \
-                self.Sl1(self.TV(J)) +\
-                self.Sl1(J_HSV_S - J_HSV_V)
+        dcp = self.dcp(img, A)
+        # L_prior = self.Sl1((self.large_boxblur(T) - dcp)) + \
+        L_prior = self.Sl1((self.large_boxblur(T) - self.large_boxblur_1(dcp))) + \
+                1e-1 * self.Sl1(self.TV(J)) +\
+                1e-1 * self.Sl1(J_HSV_S - J_HSV_V)
                 
         clean_T, clean_A, clean_J = self.f(J)
 
-        L_clear = self.Sl1(J - clean_J) + self.Sl1(1 - clean_T)
+        L_clear = self.Sl1(J - clean_J)
+
+        # A_T, A_A, A_J = self.f(A.expand_as(J))
 
         T_augs = []
         T_augs.append(T)
+        T_augs.append(1-T/2)
         T_augs.append((torch.amax(T, dim=(1,2,3), keepdim=True) - T + torch.amin(T, dim=(1,2,3), keepdim=True)))
-        T_augs.append((T + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.1).clamp(0, 1))
+        T_augs.append((T + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3).clamp(0, 1))
         
         L_aug = 0
         for T_aug in T_augs:
-            A_aug = (A + (torch.randn(A.size(0), A.size(1), 1, 1, device=A.device)*0.1)).clamp(0, 1)
+            A_aug = (A + (torch.randn(A.size(0), A.size(1), 1, 1, device=A.device)*0.2)).clamp(0, 1)
             img_aug = J * T_aug + A_aug * (1 - T_aug)
             aug_T, aug_A, aug_J = self.f(img_aug)
             L_aug = L_aug + self.Sl1(aug_J - J) + self.Sl1(aug_T - T_aug) +\
                             self.Sl1(aug_A - A_aug)
 
-        L_reg = 1e-2 * self.Sl1(A - self.blur(A)) + \
-                1e-4 * self.Sl1(A - torch.ones_like(A)) +\
-                1e-2 * self.Sl1(T - T.mean(dim=1, keepdim=True))
+
+        L_reg = 1e-4 * self.Sl1(A - 1) + \
+                self.Sl1(T - self.blur(T))
+
 
         L_total = L_recon + self.lambda_prior * L_prior + L_clear + self.lambda_aug * L_aug + L_reg 
         if return_package:
             return L_total, {"L_rec": L_recon, "L_p": L_prior, "L_c": L_clear, "L_a": L_aug, "L_r": L_reg}
         return L_total
- 
-
-
- 
