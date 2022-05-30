@@ -342,20 +342,20 @@ class EnhancementNet(nn.Module):
         self.num_downs = 2
         self.downscale = 2**self.num_downs
 
-        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32),)
-        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)
-        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)   
-        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64),)
-        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(128), nn.PReLU(128),)
-        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128),)
+        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32),)
+        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU(),)
+        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU(),)   
+        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64),)
+        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.InstanceNorm2d(128), nn.LeakyReLU(),)
+        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(128),)
 
         class ResBlocks(nn.Module):
             def __init__(self, channels):
                 super().__init__()
                 conv1 = nn.Sequential(
                                     nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
-                                    nn.BatchNorm2d(channels),
-                                    nn.PReLU(channels)
+                                    nn.InstanceNorm2d(channels),
+                                    nn.LeakyReLU()
                             )
                 conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
                 self.conv = nn.Sequential(conv1, conv2)
@@ -363,19 +363,20 @@ class EnhancementNet(nn.Module):
             def forward(self, x):
                 return x + self.conv(x)
 
+        # resblocks = [ResBlocks(128) for _ in range(16)] # semi 16
         resblocks = [ResBlocks(128) for _ in range(16)]
         self.resblocks = nn.Sequential(*resblocks)
         
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
 
-        self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128))
-        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64))
-        self.relu5_1 = nn.PReLU(64)
-        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
-        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
-        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32))
-        self.relu6_1 = nn.PReLU(32)
-        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32), nn.PReLU(32))
+        self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(128))
+        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64))
+        self.relu5_1 = nn.LeakyReLU()
+        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU())
+        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU())
+        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32))
+        self.relu6_1 = nn.LeakyReLU()
+        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32), nn.LeakyReLU())
         self.conv6_3 = nn.Sequential(nn.Conv2d(32, 9, 3, 1, 1, padding_mode='reflect'))
 
         self.sigmoid = nn.Sigmoid() # for T and A
@@ -441,20 +442,20 @@ class EnhancementAConst(nn.Module):
         self.num_downs = 2
         self.downscale = 2**self.num_downs
 
-        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32),)
-        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)
-        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64),)   
-        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64),)
-        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.BatchNorm2d(128), nn.PReLU(128),)
-        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128),)
+        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32),)
+        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU(),)
+        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU(),)   
+        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64),)
+        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.InstanceNorm2d(128), nn.LeakyReLU(),)
+        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(128),)
 
         class ResBlocks(nn.Module):
             def __init__(self, channels):
                 super().__init__()
                 conv1 = nn.Sequential(
                                     nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
-                                    nn.BatchNorm2d(channels),
-                                    nn.PReLU(channels)
+                                    nn.InstanceNorm2d(channels),
+                                    nn.LeakyReLU()
                             )
                 conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
                 self.conv = nn.Sequential(conv1, conv2)
@@ -467,14 +468,14 @@ class EnhancementAConst(nn.Module):
         
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
 
-        self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(128))
-        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64))
-        self.relu5_1 = nn.PReLU(64)
-        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
-        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(64), nn.PReLU(64))
-        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32))
-        self.relu6_1 = nn.PReLU(32)
-        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.BatchNorm2d(32), nn.PReLU(32))
+        self.conv4_1 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(128))
+        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64))
+        self.relu5_1 = nn.LeakyReLU()
+        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU())
+        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(64), nn.LeakyReLU())
+        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32))
+        self.relu6_1 = nn.LeakyReLU()
+        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.InstanceNorm2d(32), nn.LeakyReLU())
         self.conv6_3 = nn.Sequential(nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
 
         self.sigmoid = nn.Sigmoid() # for T and A

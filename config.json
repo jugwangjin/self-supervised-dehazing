@@ -143,7 +143,7 @@
         "pinmemory": true,
         "seed": 20202464,
         "outdir": "/data1/gwangjin/CVF-dehazing/realhaze/Enhance",
-        "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_beta",
+        "dataroot": "/Bean/data/gwangjin/RESIDE_beta",
         "device": "cuda",
         "usedataparallel": true,
         "validateevery": 5,
@@ -152,6 +152,22 @@
         "trainer": "TrainStep_Enhance"
     },
     
+    "enhance_std":
+    {
+        "epochs": 1000,
+        "lr": 1e-4,
+        "batchsize": 32,
+        "valbatchsize": 1,
+        "numworkers": 4,
+        "pinmemory": true,
+        "seed": 20202464,
+        "outdir": "/data1/gwangjin/CVF-dehazing/std/Enhance",
+        "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_standard",
+        "device": "cuda",
+        "usedataparallel": true,
+        "validateevery": 5,
+        "scheduler_step": 5
+    },
     "enhance_reside_aconst":
     {
         "dataset": "reside",
@@ -170,5 +186,23 @@
         "scheduler_step": 5,
         "model": "EnhancementNet",
         "trainer": "TrainStep_Enhance"
+    },
+    
+    "enhance_reside_semi":
+    {
+        "dataset": "reside",
+        "epochs": 1000,
+        "lr": 1e-4,
+        "batchsize": 32,
+        "valbatchsize": 1,
+        "numworkers": 4,
+        "pinmemory": true,
+        "seed": 20202464,
+        "outdir": "/data1/gwangjin/CVF-dehazing/reside_std/semi_super",
+        "dataroot": "/data1/gwangjin/dehazing_bench/RESIDE_standard",
+        "device": "cuda",
+        "usedataparallel": true,
+        "validateevery": 4,
+        "scheduler_step": 4
     }
 }

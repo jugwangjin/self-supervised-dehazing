@@ -48,7 +48,7 @@ class TrainStep_Enhance(torch.nn.Module):
         self.sl1 = torch.nn.L1Loss()
 
         self.lambda_aug = lambda_aug
-        self.lambda_prior=lambda_prior
+        self.lambda_prior=0.1
         self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
         self.large_boxblur = BoxBlur(kernel_size=5)
         self.large_boxblur_1 = BoxBlur(channels=1, kernel_size=5)
@@ -58,7 +58,6 @@ class TrainStep_Enhance(torch.nn.Module):
 
         self.get_max = torch.nn.AdaptiveMaxPool2d(output_size=(1,1))
         
-        # torch.autograd.set_detect_anomaly(True)
 
     def Sl1(self, x):
         return self.sl1(x, torch.zeros_like(x))
@@ -69,7 +68,7 @@ class TrainStep_Enhance(torch.nn.Module):
     def dcp(self, img, A):
         min_patch = -self.maxpool(-img / A.clamp(min=1e-1))
         T_rough = 1 - torch.amin(min_patch, dim=1, keepdim=True)
-        return T_rough.clamp(5e-2, 1)
+        return T_rough.clamp(min=5e-2)
 
     def bcp(self, img, A):
         A = A.mean(dim=1, keepdim=True)
@@ -82,12 +81,12 @@ class TrainStep_Enhance(torch.nn.Module):
 
         return TV_x + TV_y
 
-    def get_sv(self, img, eps=5e-2):
-        img_max = img.max(1)[0].clamp(0, 1)
-        img_min = img.min(1)[0].clamp(0, 1)
+    def get_sv(self, img, eps=1e-7):
+        img_max = img.max(1)[0]
+        img_min = img.min(1)[0]
 
         saturation = ( img_max - img_min ) / ( img_max + eps )
-        # saturation[ img_max==0 ] = 0
+        saturation[ img_max==0 ] = 0
 
         value = img_max
         return saturation, value
@@ -160,13 +159,13 @@ class TrainStep_Enhance(torch.nn.Module):
 
         # instead of guided filtering which requires large computation, blur  dcp output 
         # dcp = self.large_boxblur_1(self.dcp(img))
-        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
+        A_ = torch.amax(img, dim=(2,3), keepdim=True)
         dcp = self.dcp(img, A_)
         # bcp = self.bcp(img, A_)
         # L_prior = self.Sl1((self.large_boxblur(T) - dcp)) + \
         L_prior = 1 * self.Sl1((self.large_boxblur(T) - self.large_boxblur_1(dcp))) + \
                 1e-1 * self.Sl1(J_s - J_v) +\
-                self.Sl1(self.TV(J)) +\
+                1e-1 * self.Sl1(self.TV(J)) +\
                 self.Sl1((J - img).clamp(min=0))
                 # 1 * self.Sl1(T - T.mean(dim=1, keepdim=True))/
                 # 1e-2 * self.Sl1(J.amin(dim=1, keepdim=True)) +\
@@ -183,10 +182,12 @@ class TrainStep_Enhance(torch.nn.Module):
 
     def augmentation_loss(self, T, A, J, img):
         T_augs = []
-        # T_augs.append(T)
+        # T_augs.append(torch.ones_like(T))
+        T_augs.append(T)
+        # T_augs.append(1-T*0.95)
         T_augs.append((torch.amax(T, dim=(2,3), keepdim=True) - T + torch.amin(T, dim=(2,3), keepdim=True)))
-        T_augs.append((T + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3 + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.05).clamp(0, 1))
-        T_augs.append((T * (1 + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3) + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.05).clamp(0, 1))
+        T_augs.append((T + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3 + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.05).clamp(0.05, 1))
+        T_augs.append((T * (1 + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3) + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.05).clamp(0.05, 1))
         
         L_aug = 0
         for T_aug in T_augs:
@@ -219,11 +220,8 @@ class TrainStep_Enhance(torch.nn.Module):
         L_reg = self.regularization_loss(T, A, J, img)
 
         L_total = L_recon + self.lambda_prior * L_prior + L_clean + self.lambda_aug * L_aug + L_reg 
-
-        L_total = torch.nan_to_num(L_total)
         if return_package:
             return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, "L_a": L_aug, "L_r": L_reg}
-
         return L_total
  
 
@@ -275,7 +273,6 @@ class TrainStep_Enhance_Semi(TrainStep_Enhance):
         L_reg = self.regularization_loss(T, A, J, img)
 
         L_total = L_recon + self.lambda_prior * L_prior + L_clean + self.lambda_aug * L_aug + L_reg 
-        L_total = torch.nan_to_num(L_total)
         if return_package:
             return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, "L_a": L_aug, "L_r": L_reg}
         return L_total

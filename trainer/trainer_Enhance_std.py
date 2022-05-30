@@ -14,9 +14,8 @@ from tqdm import tqdm
 import numpy
 import random
 
-from .utils import guidedfilter2d
-
 torch.manual_seed(20202464)
+from .utils import guidedfilter2d
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -35,26 +34,18 @@ class Trainer(torch.nn.Module):
         
         self.optimizer = torch.optim.Adam(self.trainer.module.f.parameters() if args["usedataparallel"]
                                         else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9, amsgrad=True)
-                                        # else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args["scheduler_step"], gamma=0.99)
         self.epochs = args["epochs"]
         
-        if args["dataset"] == 'realhaze':
-            from dataset import RealHazyDataset
-            dataset = RealHazyDataset
-        elif args["dataset"] == 'reside':
-            from dataset import RESIDEHazyDataset
-            dataset = RESIDEHazyDataset
-        else:
-            raise Exception("Not implemented dataset")
+        from dataset import RESIDEStandardTrainSet, RESIDEStandardSemiSupervision, RESIDEStandardTestSet
 
-        train_dataset = dataset(root=args["dataroot"], mode='train', )
+        train_dataset = RESIDEStandardTrainSet(root=args["dataroot"])
         g = torch.Generator()
         g.manual_seed(args["seed"])
         self.train_loader = torch.utils.data.DataLoader(train_dataset, args["batchsize"], shuffle=True, num_workers=args["numworkers"],
                                             pin_memory=args["pinmemory"], 
                                             worker_init_fn = seed_worker, generator=g, drop_last=True)
-        val_dataset = dataset(root=args["dataroot"], mode='validation', )
+        val_dataset = RESIDEStandardTestSet(root=args["dataroot"],)
         self.val_loader = torch.utils.data.DataLoader(val_dataset, args["valbatchsize"], shuffle=False, num_workers=args["numworkers"],
                                             pin_memory=args["pinmemory"], 
                                             worker_init_fn = seed_worker, generator=g)
@@ -69,7 +60,6 @@ class Trainer(torch.nn.Module):
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
         self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
         self.get_max = torch.nn.AdaptiveMaxPool2d(output_size=(1,1))
-
         self.min_val_loss = 10000
         
     def train(self):
@@ -97,7 +87,6 @@ class Trainer(torch.nn.Module):
                                     else self.trainer.f.state_dict(),
                             'optim': self.optimizer.state_dict()},
                             os.path.join(self.out_dir, 'checkpoints', 'best_val.tar'))
-
             plt.clf()
             plt.plot(train_losses, label='train')
             plt.plot(validation_losses, label='validation')

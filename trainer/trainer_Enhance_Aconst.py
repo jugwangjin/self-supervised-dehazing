@@ -65,12 +65,14 @@ class Trainer(torch.nn.Module):
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
-        self.maxpool = torch.nn.MaxPool2d(kernel_size=9, stride=1, padding=4)
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+        self.get_max = torch.nn.AdaptiveMaxPool2d(output_size=(1,1))
         
     def train(self):
         train_losses = []
         validation_losses = []
 
+        validation_loss = self.validation_epoch()
         prog_bar = tqdm(range(self.epochs))
         for epoch in prog_bar:
             prog_bar.set_description(f'[Progress] epoch {epoch}/{self.epochs} - saving at {self.out_dir}')
@@ -162,14 +164,28 @@ class Trainer(torch.nn.Module):
 
             A = A.repeat(1, 1, 5, 5)
             
+            A_ = self.get_max(img)
+
+            min_patch = -self.maxpool(-img / A_.clamp(min=1e-1))
+            dcp = 1 - torch.amin(min_patch, dim=1, keepdim=True)
+            dcp = dcp.clamp(0, 1)
+
+            A_ = A_.mean(dim=1, keepdim=True)
+            bcp = (torch.amax(self.maxpool(img), dim=1, keepdim=True) - A_) / (1 - A_).clamp(min=1e-2)
+            bcp = bcp.clamp(0, 1)
+
+
+
             for idx in range(img.size(0)):
                 torchvision.utils.save_image(clean[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_clean.png'))
                 torchvision.utils.save_image(img[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_img.png'))
                 torchvision.utils.save_image(T[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_T.png'))
                 torchvision.utils.save_image(A[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_A.png'))
                 torchvision.utils.save_image(rec[idx], os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_reconstuct.png'))
-                torchvision.utils.save_image(J_HSV_S[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_HSV_S.png'))
-                torchvision.utils.save_image(J_HSV_V[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_HSV_V.png'))
+                torchvision.utils.save_image(J_HSV_S[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_S.png'))
+                torchvision.utils.save_image(J_HSV_V[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_V.png'))
+                torchvision.utils.save_image(dcp[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_dcp.png'))
+                torchvision.utils.save_image(bcp[idx].repeat(3,1,1), os.path.join(self.out_dir, 'results', f'{batchIdx * self.args["valbatchsize"] + idx}_bcp.png'))
             
             prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.4f} acc {accum_losses/num_samples:.4f}')
 
