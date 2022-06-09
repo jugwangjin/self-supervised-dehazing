@@ -2,7 +2,7 @@
 {   
     "options":
     {
-        "reside_unet":
+        "reside_unetbl":
         {
             "epochs": 1000,
             "lr": 1e-4,
@@ -17,15 +17,15 @@
             "validateevery": 5,
             "scheduler_step": 1,
             "trainer": "trainer",
-            "model": "UNet",
-            "trainstep": "TrainStep_AConst_Prior",
+            "model": "UNetBL",
+            "trainstep": "TrainStep",
             "saver": "SaveAConst",
             "valdataset": "RESIDEStandardDataset",
             "traindataset": "RESIDEStandardDataset",
             "loss": "sl1"
         },
 
-        "realhaze_unet":
+        "realhaze_unetbl":
         {
             "epochs": 1000,
             "lr": 1e-4,
@@ -40,7 +40,7 @@
             "validateevery": 5,
             "scheduler_step": 1,
             "trainer": "trainer",
-            "model": "UNet",
+            "model": "UNetBL",
             "trainstep": "TrainStep",
             "saver": "SaveAConst",
             "valdataset": "RealHazyDataset",
@@ -48,7 +48,7 @@
             "loss": "sl1"
         },
 
-        "reside_semi_unet":
+        "reside_semi_unetbl":
         {
             "epochs": 1000,
             "lr": 1e-4,
@@ -63,8 +63,8 @@
             "validateevery": 5,
             "scheduler_step": 1,
             "trainer": "trainer_semi",
-            "model": "UNet",
-            "trainstep": "TrainStep_AConst_Prior",
+            "model": "UNetBL",
+            "trainstep": "TrainStep_Semi",
             "saver": "SaveAConst",
             "valdataset": "RESIDEStandardDataset",
             "traindataset": "RESIDEStandardDataset",

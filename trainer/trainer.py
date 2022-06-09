@@ -13,6 +13,7 @@ import trainer.saver as saver
 import dataset
 
 import os
+import shutil
 from tqdm import tqdm
 import numpy
 import random
@@ -65,6 +66,11 @@ class Trainer(torch.nn.Module):
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
+        os.makedirs(os.path.join(self.out_dir, 'codes'), exist_ok=True)
+        shutil.copy(os.path.join('model', 'model.py'), os.path.join(self.out_dir, 'codes', 'model.py'))
+        shutil.copy(os.path.join('trainer', 'train_step.py'), os.path.join(self.out_dir, 'codes', 'train_step.py'))
+        shutil.copy(os.path.join('trainer', 'trainer.py'), os.path.join(self.out_dir, 'codes', 'trainer.py'))
+        shutil.copy(os.path.join('config.json'), os.path.join(self.out_dir, 'codes', 'config.json'))
 
         with open(os.path.join(self.out_dir, 'args.txt'), 'w') as f:
             f.write(str(self.args))

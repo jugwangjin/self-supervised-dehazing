@@ -19,10 +19,11 @@ if __name__=='__main__':
     args = vars(args)
     
     with open('config.json', 'r') as f:
-        opt = json.load(f)["options"][args['config']]
+        config = json.load(f)
+        opt = config["options"][args['config']]
         for key in opt:
             args[key] = opt[key]
-        opt = json.load(f)["lambdas"][args['config_lambda']]
+        opt = config["lambdas"][args['config_lambda']]
         args["lambdas"] = opt
 
     if args["use_bean"] == True:
