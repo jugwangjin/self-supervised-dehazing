@@ -84,7 +84,7 @@ class UNet(nn.Module):
                                         nn.PReLU(32),
                                         )
 
-        self.out_decoder = nn.Sequential(nn.Sequntial(*[ResBlocks(32) for _ in range(2)]),
+        self.out_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(32) for _ in range(2)]),
                                         nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
         
 

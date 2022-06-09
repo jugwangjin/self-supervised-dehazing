@@ -1,71 +1,99 @@
-{
-    "reside_unet":
+
+{   
+    "options":
     {
-        "epochs": 1000,
-        "lr": 1e-4,
-        "batchsize": 64,
-        "valbatchsize": 1,
-        "numworkers": 4,
-        "pinmemory": true,
-        "seed": 20202464,
-        "dataroot": "RESIDE_standard",
-        "device": "cuda",
-        "usedataparallel": true,
-        "validateevery": 5,
-        "scheduler_step": 1,
-        "trainer": "trainer",
-        "model": "UNet",
-        "trainstep": "TrainStep_AConst_Prior",
-        "saver": "SaveAConst",
-        "valdataset": "RESIDEStandardDataset",
-        "traindataset": "RESIDEStandardDataset",
-        "loss": "sl1"
+        "reside_unet":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNet",
+            "trainstep": "TrainStep_AConst_Prior",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        "realhaze_unet":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_beta",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNet",
+            "trainstep": "TrainStep",
+            "saver": "SaveAConst",
+            "valdataset": "RealHazyDataset",
+            "traindataset": "RealHazyDataset",
+            "loss": "sl1"
+        },
+
+        "reside_semi_unet":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer_semi",
+            "model": "UNet",
+            "trainstep": "TrainStep_AConst_Prior",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "trainpaireddataset": "RESIDEStandardPairedDataset",
+            "loss": "sl1"
+        }
     },
 
-    "realhaze_unet":
+    "lambdas":
     {
-        "epochs": 1000,
-        "lr": 1e-4,
-        "batchsize": 64,
-        "valbatchsize": 1,
-        "numworkers": 4,
-        "pinmemory": true,
-        "seed": 20202464,
-        "dataroot": "RESIDE_beta",
-        "device": "cuda",
-        "usedataparallel": true,
-        "validateevery": 5,
-        "scheduler_step": 1,
-        "trainer": "trainer",
-        "model": "UNet",
-        "trainstep": "TrainStep",
-        "saver": "SaveAConst",
-        "valdataset": "RealHazyDataset",
-        "traindataset": "RealHazyDataset",
-        "loss": "sl1"
-    },
-
-    "reside_semi_unet":
-    {
-        "epochs": 1000,
-        "lr": 1e-4,
-        "batchsize": 64,
-        "valbatchsize": 1,
-        "numworkers": 4,
-        "pinmemory": true,
-        "seed": 20202464,
-        "dataroot": "RESIDE_standard",
-        "device": "cuda",
-        "usedataparallel": true,
-        "validateevery": 5,
-        "scheduler_step": 1,
-        "trainer": "trainer_semi",
-        "model": "UNet",
-        "trainstep": "TrainStep_AConst_Prior",
-        "saver": "SaveAConst",
-        "valdataset": "RESIDEStandardDataset",
-        "traindataset": "RESIDEStandardDataset",
-        "trainpaireddataset": "RESIDEStandardPairedDataset",
-        "loss": "sl1"
+        "baseline":
+        {
+                "recon": 1,
+                "aug": 0.1,
+                "T_DCP": 1e-1,
+                "J_TV": 1e-1,
+                "J_pixel_intensity": 1e-2,
+                "J_DCP": 1e-2,
+                "J_BCP": 1e-2,
+                "A_hint": 1e-1,
+                "T_gray": 1e-2,
+                "T_smooth": 1,
+                "clean": 0.1,
+                "T_zero": 0.1,
+                "J_value": 1e-1,
+                "J_saturation":1e-1,
+                "J_hue": 1e-2,
+                "J_idt": 1e-1,
+                "J_var": 1
+        }
     }
 }
