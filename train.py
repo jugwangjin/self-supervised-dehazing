@@ -13,6 +13,8 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default=None)
+    parser.add_argument('--config_lambda', type=str, default=None)
+    parser.add_argument('--use_bean', action='store_true', default=False)
     args = parser.parse_args()
     args = vars(args)
     
@@ -21,11 +23,17 @@ if __name__=='__main__':
         for key in opt:
             args[key] = opt[key]
 
+    with open('config_lambda.json', 'r') as f:
+        opt = json.load(f)[args['config_lambda']]
+        args["lambdas"] = opt
+
+    if args["use_bean"] == True:
+        args["outdir"] = os.path.join("/Bean/log/gwangjin/CVF-dehazing/", args["config"], args["config_lambda"])
+        args["dataroot"] = os.path.join("/Bean/log/gwangjin/dehazing_bench/", args["dataroot"])
+    else:
+        args["outdir"] = os.path.join("/Jarvis/workspace/gwangjin/dehazing/cvf-results/", args["config"], args["config_lambda"])
+        args["dataroot"] = os.path.join("/data1/gwangjin/dehazing_bench/", args["dataroot"])
+
     print(args)
 
     main(args)
-
-
-
-
-

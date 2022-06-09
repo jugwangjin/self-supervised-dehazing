@@ -59,9 +59,9 @@ class Trainer(torch.nn.Module):
 
         self.out_dir = args["outdir"]
         num = 0
-        while os.path.isdir(self.out_dir+str(num)):
+        while os.path.isdir(os.path.join(self.out_dir, str(num))):
             num+=1
-        self.out_dir = self.out_dir + str(num)
+        self.out_dir = os.path.join(self.out_dir, str(num))
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)

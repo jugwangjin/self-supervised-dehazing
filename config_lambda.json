@@ -1,0 +1,22 @@
+{
+    "baseline":
+    {
+            "recon": 1,
+            "aug": 0.1,
+            "T_DCP": 1e-1,
+            "J_TV": 1e-1,
+            "J_pixel_intensity": 1e-2,
+            "J_DCP": 1e-2,
+            "J_BCP": 1e-2,
+            "A_hint": 1e-1,
+            "T_gray": 1e-2,
+            "T_smooth": 1,
+            "clean": 0.1,
+            "T_zero": 0.1,
+            "J_value": 1e-1,
+            "J_saturation":1e-1,
+            "J_hue": 1e-2,
+            "J_idt": 1e-1,
+            "J_var": 1
+    }
+}
