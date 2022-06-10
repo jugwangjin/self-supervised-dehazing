@@ -62,7 +62,7 @@ class TrainStep(torch.nn.Module):
     def T_zero_loss(self, A):
         T_zero_T, T_zero_A, T_zero_J = self.f(A)
 
-        L_T_zero = self.Sl1(T_zero_T) + self.Sl1(T_zero_A - A)
+        L_T_zero = self.Sl1(T_zero_T) + self.Sl1(T_zero_A - A) + self.Sl1(T_zero_J - A)
         return L_T_zero
 
     def augmentation_loss(self, T, A, J, img):
@@ -93,7 +93,8 @@ class TrainStep(torch.nn.Module):
         L_recon = self.Sl1(img - (J * T + A * (1 - T)))
         return L_recon
 
-    def forward(self, img, return_package = False):
+    # def forward(self, img, return_package = False):
+    def forward(self, img):
         T, A, J = self.f(img)
 
         L_recon = self.recon_loss(T, A, J, img)
@@ -106,10 +107,10 @@ class TrainStep(torch.nn.Module):
         L_total = self.lambdas["recon"] * L_recon + L_prior + self.lambdas["clean"] * L_clean +\
                      self.lambdas["aug"] * L_aug + L_reg + self.lambdas["T_zero"] * L_T_zero
         L_total = torch.nan_to_num(L_total, nan=0, posinf=0, neginf=0)
-        if return_package:
-            return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
-                            "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
-        return L_total
+        # if return_package:
+        return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
+                        "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
+        # return L_total
     '''
     loss helpers
     '''
@@ -206,7 +207,8 @@ class TrainStep_Semi(TrainStep):
             L_recon = self.Sl1(img - (clear_img * T + A * (1 - T))) + self.Sl1(J - clear_img)
         return L_recon
 
-    def forward(self, img, clear_img = None, return_package = False):
+    # def forward(self, img, clear_img = None, return_package = False):
+    def forward(self, img, clear_img = None):
         T, A, J = self.f(img)
 
         L_recon = self.recon_loss(T, A, J, img, clear_img = clear_img)
@@ -223,9 +225,38 @@ class TrainStep_Semi(TrainStep):
         L_total = self.lambdas["recon"] * L_recon + L_prior + self.lambdas["clean"] * L_clean +\
                      self.lambdas["aug"] * L_aug + L_reg + self.lambdas["T_zero"] * L_T_zero
         L_total = torch.nan_to_num(L_total, nan=0, posinf=0, neginf=0)
-        if return_package:
-            return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
-                            "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
-        return L_total
+        # if return_package:
+        return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
+                        "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
+        # return L_total
+
+
+
+class TrainStep_TGray(TrainStep):
+    def __init__(self, f, args):
+        super().__init__(f, args)
+
+    # def forward(self, img, clear_img = None, return_package = False):
+    def forward(self, img, clear_img = None):
+        T, A, J = self.f(img)
+
+        L_recon = self.recon_loss(T, A, J, img, clear_img = clear_img)
+        
+        if clear_img is not None:
+            J = clear_img
+
+        L_prior = self.prior_loss(T, A, J, img)
+        L_clean = self.clean_loss(J)
+        L_T_zero = self.T_zero_loss(A.expand_as(img))
+        L_aug = self.augmentation_loss(T, A, J, img)
+        L_reg = self.regularization_loss(T, A, J, img)
+
+        L_total = self.lambdas["recon"] * L_recon + L_prior + self.lambdas["clean"] * L_clean +\
+                     self.lambdas["aug"] * L_aug + L_reg + self.lambdas["T_zero"] * L_T_zero
+        L_total = torch.nan_to_num(L_total, nan=0, posinf=0, neginf=0)
+        # if return_package:
+        return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
+                        "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
+        # return L_total
 
 

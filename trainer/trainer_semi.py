@@ -86,7 +86,6 @@ class Trainer(torch.nn.Module):
             f.write(str(self.args))
 
         self.min_val_loss = 10000
-
         
     def train(self):
         train_losses = []
@@ -155,7 +154,8 @@ class Trainer(torch.nn.Module):
                     img = img.to(self.args["device"])
                     clear_img = clear_img.to(self.args["device"])
 
-            loss, L_package = self.trainer(img, clear_img = clear_img, return_package=True)
+            # loss, L_package = self.trainer(img, clear_img = clear_img, return_package=True)
+            loss, L_package = self.trainer(img, clear_img = clear_img)
             loss = loss.mean()
             loss.backward()
 
@@ -183,6 +183,7 @@ class Trainer(torch.nn.Module):
             desc = desc + f' g {acc_grad / num_grad:.4f}'
             prog_bar.set_description(desc)
 
+
             # error handling
             if acc_grad/num_grad > 5:
                 print(desc)
@@ -203,15 +204,23 @@ class Trainer(torch.nn.Module):
         for batchIdx, img in enumerate(prog_bar):
             try:
                 img = img.to(self.args["device"])
-                loss = self.trainer(img).mean()
+                # loss, L_package = self.trainer(img, return_package=True)
+                loss, L_package = self.trainer(img)
+                loss = loss.mean()
                 num_samples += img.size(0)
                 accum_losses += loss.item() * img.size(0)
                     
                 T, A, clean = f(img)
 
+                desc = f'[Val] L {loss:.4f} AC {accum_losses/num_samples:.4f}'
+                for k in L_package:
+                    desc = desc + f' {k}:{L_package[k].mean():.4f}'
+                prog_bar.set_description(desc)
+
+
                 for idx in range(img.size(0)):
                     self.saver.save_image(img, T, A, clean, idx, batchIdx, self.out_dir, self.args["valbatchsize"])
-                prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.4f} acc {accum_losses/num_samples:.4f}')
+                # prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.4f} acc {accum_losses/num_samples:.4f}')
 
             except Exception as e:
                 print(f'passing {batchIdx}, img {img.shape}')
@@ -222,4 +231,6 @@ class Trainer(torch.nn.Module):
 
 
 if __name__=='__main__':
-    print('Modu
+    print('Module file')
+
+

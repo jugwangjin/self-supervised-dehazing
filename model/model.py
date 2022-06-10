@@ -94,7 +94,7 @@ class UNet(nn.Module):
                                     nn.Sigmoid())
 
         self.sigmoid = nn.Sigmoid()
-        self.TBlur = BoxBlur(channels=3, kernel_size=7)
+        self.TBlur = BoxBlur(channels=3, kernel_size=5)
 
     def forward(self, x):
         x, pad = self.pad(x)
@@ -253,7 +253,7 @@ class UNetBL(nn.Module):
                                     nn.Sigmoid())
 
         self.sigmoid = nn.Sigmoid()
-        self.TBlur = BoxBlur(channels=3, kernel_size=7)
+        self.TBlur = BoxBlur(channels=3, kernel_size=5)
 
     def forward(self, x):
         x, pad = self.pad(x)
@@ -380,7 +380,7 @@ class ResNet_NoNorm(nn.Module):
                                     nn.Conv2d(128, 3, 1, 1),
                                     nn.Sigmoid())
 
-        self.TBlur = BoxBlur(channels=3, kernel_size=7)
+        self.TBlur = BoxBlur(channels=3, kernel_size=5)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

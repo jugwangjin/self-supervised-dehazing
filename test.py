@@ -32,24 +32,32 @@ def h(img):
 def main(args):
     out_dir = args["outdir"]
     num = args["index"]
-    out_dir = out_dir + str(num)
+    out_dir = os.path.join(out_dir, str(num))
 
     f = getattr(model, args["model"])()
-    ckpt = torch.load(os.path.join(out_dir, "checkpoints", "checkpoint.tar" if args["latest"] else "best_val.tar"))
+    if args["cpu"]:
+        ckpt = torch.load(os.path.join(out_dir, "checkpoints", "checkpoint.tar" if args["latest"] else "best_val.tar"), map_location=torch.device('cpu'))
+    else:
+        ckpt = torch.load(os.path.join(out_dir, "checkpoints", "checkpoint.tar" if args["latest"] else "best_val.tar"))
     f.load_state_dict(ckpt["f"])
-    f = f.cuda()
+    if not args["cpu"]:
+        f = f.cuda()
 
     out_name = args["outname"] if args["outname"] is not None else args["img"].split(".")[0].split("/")[-1]
     img_out = os.path.join(out_dir, 'testing_outputs', out_name)
     os.makedirs(img_out, exist_ok=True)
 
-    maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2).cuda()
+    maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+    if not args["cpu"]:
+        maxpool = maxpool.cuda()
 
 
 
     img = Image.open(args["img"]).convert("RGB")
     img = torchvision.transforms.ToTensor()(img)
-    img = img.unsqueeze(0).cuda()
+    img = img.unsqueeze(0)
+    if not args["cpu"]:
+        img = img.cuda()
 
 
 
@@ -92,6 +100,13 @@ def main(args):
     torchvision.utils.save_image(img_HSV_H[0].repeat(3,1,1), os.path.join(img_out, 'input_H.png'))
     torchvision.utils.save_image(dcp[0].repeat(3,1,1), os.path.join(img_out, 'input_dcp.png'))
 
+    T_aug = (torch.amax(T, dim=(2,3), keepdim=True) - T + torch.amin(T, dim=(2,3), keepdim=True))
+    torchvision.utils.save_image(T_aug[0], os.path.join(img_out, f'T_aug1.png'))
+    T_aug = (T + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3 + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.1).clamp(0.05, 1)
+    torchvision.utils.save_image(T_aug[0], os.path.join(img_out, f'T_aug2.png'))
+    T_aug = (T * (1 + torch.randn(T.size(0), 1, 1, 1, device=T.device) * 0.3) + torch.randn(T.size(0), T.size(1), 1, 1, device=T.device) * 0.1).clamp(0.05, 1)
+    torchvision.utils.save_image(T_aug[0], os.path.join(img_out, f'T_aug3.png'))
+
     A_ = torch.amax(J, dim=(2,3), keepdim=True)
     min_patch = -maxpool(-J / A_.clamp(min=1e-1, max=0.95))
     dcp = 1 - torch.amin(min_patch, dim=1, keepdim=True)
@@ -124,17 +139,28 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True)
+    parser.add_argument('--config_lambda', type=str, required=True)
     parser.add_argument('--index', type=int, default=0)
     parser.add_argument('--img', type=str, required=True)
     parser.add_argument('--outname', type=str, default=None)
     parser.add_argument('--latest', type=bool, default=False)
+    parser.add_argument('--use_bean', action='store_true', default=False)
+    parser.add_argument('--cpu', action='store_true', default=False)
     args = parser.parse_args()
     args = vars(args)
     
     with open('config.json', 'r') as f:
-        opt = json.load(f)[args['config']]
+        opt = json.load(f)["options"][args['config']]
         for key in opt:
             args[key] = opt[key]
+
+    if args["use_bean"] == True:
+        args["outdir"] = os.path.join("/Bean/log/gwangjin/CVF-dehazing/", args["config"], args["config_lambda"])
+        args["dataroot"] = os.path.join("/Bean/data/gwangjin/", args["dataroot"])
+    else:
+        args["outdir"] = os.path.join("/Jarvis/workspace/gwangjin/dehazing/cvf-results/", args["config"], args["config_lambda"])
+        args["dataroot"] = os.path.join("/data1/gwangjin/dehazing_bench/", args["dataroot"])
+
 
     print(args)
 

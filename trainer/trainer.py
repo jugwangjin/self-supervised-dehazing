@@ -72,8 +72,10 @@ class Trainer(torch.nn.Module):
         shutil.copy(os.path.join('trainer', 'trainer.py'), os.path.join(self.out_dir, 'codes', 'trainer.py'))
         shutil.copy(os.path.join('config.json'), os.path.join(self.out_dir, 'codes', 'config.json'))
 
+        
         with open(os.path.join(self.out_dir, 'args.txt'), 'w') as f:
             f.write(str(self.args))
+
 
         self.min_val_loss = 10000
 
@@ -82,10 +84,10 @@ class Trainer(torch.nn.Module):
         train_losses = []
         validation_losses = []
 
+        # validation_loss = self.validation_epoch()
         prog_bar = tqdm(range(self.epochs))
         for epoch in prog_bar:
             prog_bar.set_description(f'[Progress] epoch {epoch}/{self.epochs} - saving at {self.out_dir}')
-            
             train_loss = self.train_epoch()
             train_losses.append(train_loss)
             self.scheduler.step()
@@ -123,6 +125,7 @@ class Trainer(torch.nn.Module):
                             else self.trainer.f.state_dict()},
                     os.path.join(self.out_dir, 'checkpoints', 'final.tar'))
 
+
     def train_epoch(self):
         num_samples = 0
         accum_losses = 0
@@ -133,7 +136,8 @@ class Trainer(torch.nn.Module):
             img = img.to(self.args["device"])
 
             self.optimizer.zero_grad()
-            loss, L_package = self.trainer(img, return_package=True)
+            loss, L_package = self.trainer(img)
+            # loss, L_package = self.trainer(img, return_package=True)
             loss = loss.mean()
             loss.backward()
 
@@ -178,10 +182,13 @@ class Trainer(torch.nn.Module):
         if self.args["usedataparallel"]:
             f = torch.nn.DataParallel(f)
         f.eval()
+
         for batchIdx, img in enumerate(prog_bar):
             try:
                 img = img.to(self.args["device"])
-                loss = self.trainer(img).mean()
+                loss, L_package = self.trainer(img)
+                # loss, L_package = self.trainer(img, return_package=True)
+                loss = loss.mean()
                 num_samples += img.size(0)
                 accum_losses += loss.item() * img.size(0)
                     
@@ -189,13 +196,18 @@ class Trainer(torch.nn.Module):
 
                 for idx in range(img.size(0)):
                     self.saver.save_image(img, T, A, clean, idx, batchIdx, self.out_dir, self.args["valbatchsize"])
-                prog_bar.set_description(f'[Val] batch {batchIdx}/{len(prog_bar)} loss {loss:.4f} acc {accum_losses/num_samples:.4f}')
+       
+                desc = f'[Val] L {loss:.4f} AC {accum_losses/num_samples:.4f}'
+                for k in L_package:
+                    desc = desc + f' {k}:{L_package[k].mean():.4f}'
+                prog_bar.set_description(desc)
 
             except Exception as e:
                 print(f'passing {batchIdx}, img {img.shape}')
                 print(e)
                 pass
         torch.cuda.empty_cache()
+
         return accum_losses / num_samples
 
 
