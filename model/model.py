@@ -243,8 +243,8 @@ class UNetBL(nn.Module):
                                         nn.PReLU(32),
                                         )
 
-        self.out_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(32) for _ in range(2)]),
-                                        nn.Conv2d(32, 6, 3, 1, 1, padding_mode='replicate'))
+        self.out_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(35) for _ in range(2)]),
+                                        nn.Conv2d(35, 6, 3, 1, 1, padding_mode='replicate'))
         
 
         self.conv_A = nn.Sequential(nn.Conv2d(256, 128, 3, 1, 1),
@@ -296,7 +296,7 @@ class UNetBL(nn.Module):
 
         out = self.l1_up(dec_l1)
 
-        out = self.out_decoder(out)
+        out = self.out_decoder(torch.cat((x, out), dim=1))
 
         T, J = torch.split(out, 3, dim=1)
         J = J + x

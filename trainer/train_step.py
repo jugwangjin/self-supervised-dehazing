@@ -50,16 +50,15 @@ class TrainStep(torch.nn.Module):
                 self.lambdas["J_saturation"] * self.Sl1((img_s - J_s).clamp(min=0)) +\
                 self.lambdas["J_hue"] * self.Sl1(J_uv - img_uv) +\
                 self.lambdas["J_var"] * self.Sl1((self.var(img) - self.var(J)).clamp(min=0))
-
         return L_prior
 
-    def clean_loss(self, J):
+    def clean_loss(self, T, A, J, img):
         clean_T, clean_A, clean_J = self.f(J)
 
         L_clean = self.Sl1(J - clean_J) + self.Sl1(clean_T - 1)
         return L_clean
 
-    def T_zero_loss(self, A):
+    def T_zero_loss(self, T, A, J, img):
         T_zero_T, T_zero_A, T_zero_J = self.f(A)
 
         L_T_zero = self.Sl1(T_zero_T) + self.Sl1(T_zero_A - A) + self.Sl1(T_zero_J - A)
@@ -99,8 +98,8 @@ class TrainStep(torch.nn.Module):
 
         L_recon = self.recon_loss(T, A, J, img)
         L_prior = self.prior_loss(T, A, J, img)
-        L_clean = self.clean_loss(J)
-        L_T_zero = self.T_zero_loss(A.expand_as(img))
+        L_clean = self.clean_loss(T, A, J, img)
+        L_T_zero = self.T_zero_loss(T, A.expand_as(img), J, img)
         L_aug = self.augmentation_loss(T, A, J, img)
         L_reg = self.regularization_loss(T, A, J, img)
 
@@ -120,7 +119,7 @@ class TrainStep(torch.nn.Module):
     def dcp(self, img, A):
         min_patch = -self.maxpool(-img / A.clamp(min=1e-1, max=0.95))
         T_rough = 1 - torch.amin(min_patch, dim=1, keepdim=True)
-        return T_rough.clamp(5e-2, 1).detach()
+        return T_rough.clamp(5e-2, 1)
 
     def TV(self, x):
         TV_x = (x[:, :, 1:, :] - x[:, :, :-1, :]).abs().mean()
@@ -217,8 +216,8 @@ class TrainStep_Semi(TrainStep):
             J = clear_img
 
         L_prior = self.prior_loss(T, A, J, img)
-        L_clean = self.clean_loss(J)
-        L_T_zero = self.T_zero_loss(A.expand_as(img))
+        L_clean = self.clean_loss(T, A, J, img)
+        L_T_zero = self.T_zero_loss(T, A.expand_as(img), J, img)
         L_aug = self.augmentation_loss(T, A, J, img)
         L_reg = self.regularization_loss(T, A, J, img)
 
@@ -232,31 +231,26 @@ class TrainStep_Semi(TrainStep):
 
 
 
-class TrainStep_TGray(TrainStep):
+class TrainStep_weighted_dcp(TrainStep):
     def __init__(self, f, args):
         super().__init__(f, args)
 
-    # def forward(self, img, clear_img = None, return_package = False):
-    def forward(self, img, clear_img = None):
-        T, A, J = self.f(img)
+    def prior_loss(self, T, A, J, img):
+        J_s, J_v = self.get_sv(J)
+        img_s, img_v = self.get_sv(img)
 
-        L_recon = self.recon_loss(T, A, J, img, clear_img = clear_img)
+        J_uv = self.get_uv(J)
+        img_uv = self.get_uv(img)
         
-        if clear_img is not None:
-            J = clear_img
+        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
+        dcp = self.dcp(img, A_)
+        
+        L_prior = self.lambdas["T_DCP"] * self.Sl1((self.large_boxblur(T) - self.large_boxblur_1(dcp)) * dcp) + \
+                self.lambdas["J_TV"] * self.Sl1(self.TV(J)) +\
+                self.lambdas["J_pixel_intensity"] * self.Sl1((J - img).clamp(min=0)) +\
+                self.lambdas["J_value"] * self.Sl1((J_v - img_v).clamp(min=0)) +\
+                self.lambdas["J_saturation"] * self.Sl1((img_s - J_s).clamp(min=0)) +\
+                self.lambdas["J_hue"] * self.Sl1(J_uv - img_uv) +\
+                self.lambdas["J_var"] * self.Sl1((self.var(img) - self.var(J)).clamp(min=0))
 
-        L_prior = self.prior_loss(T, A, J, img)
-        L_clean = self.clean_loss(J)
-        L_T_zero = self.T_zero_loss(A.expand_as(img))
-        L_aug = self.augmentation_loss(T, A, J, img)
-        L_reg = self.regularization_loss(T, A, J, img)
-
-        L_total = self.lambdas["recon"] * L_recon + L_prior + self.lambdas["clean"] * L_clean +\
-                     self.lambdas["aug"] * L_aug + L_reg + self.lambdas["T_zero"] * L_T_zero
-        L_total = torch.nan_to_num(L_total, nan=0, posinf=0, neginf=0)
-        # if return_package:
-        return L_total, {"L_rec": L_recon,  "L_p": L_prior, "L_c": L_clean, 
-                        "L_a": L_aug, "L_r": L_reg, "L_Tz": L_T_zero}
-        # return L_total
-
-
+        return L_prior

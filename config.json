@@ -70,6 +70,53 @@
             "traindataset": "RESIDEStandardDataset",
             "trainpaireddataset": "RESIDEStandardPairedDataset",
             "loss": "sl1"
+        },
+
+        "realhaze_unetbl_weighted_dcp_l1":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_beta",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL",
+            "trainstep": "TrainStep_weighted_dcp",
+            "saver": "SaveAConst",
+            "valdataset": "RealHazyDataset",
+            "traindataset": "RealHazyDataset",
+            "loss": "l1"
+        },
+
+
+        "reside_unetbl_weighted_dcp_l1":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL",
+            "trainstep": "TrainStep_weighted_dcp",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "l1"
         }
     },
 
@@ -118,7 +165,7 @@
         "ver3":
         {
                 "recon": 1,
-                "aug": 0.25,
+                "aug": 0.1,
                 "T_DCP": 1e-1,
                 "J_TV": 1e-1,
                 "J_pixel_intensity": 1e-2,
