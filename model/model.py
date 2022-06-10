@@ -20,10 +20,10 @@ class UNet(nn.Module):
             def __init__(self, channels):
                 super().__init__()
                 conv1 = nn.Sequential(
-                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
+                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate'),
                                     nn.PReLU(channels)
                             )
-                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
+                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate')
                 self.conv = nn.Sequential(conv1, conv2)
 
             def forward(self, x):
@@ -31,23 +31,23 @@ class UNet(nn.Module):
 
         self.down = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.l1_encoder = nn.Sequential(nn.Conv2d(3, 32, 3, 2, 1, padding_mode='reflect'),
+        self.l1_encoder = nn.Sequential(nn.Conv2d(3, 32, 3, 2, 1, padding_mode='replicate'),
                                         nn.PReLU(32),
                                         )
 
-        self.l2_encoder = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1, padding_mode='reflect'),
+        self.l2_encoder = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(64),
                                         )
 
-        self.l3_encoder = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1, padding_mode='reflect'),
+        self.l3_encoder = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(128),
                                         )
 
-        self.l4_encoder = nn.Sequential(nn.Conv2d(128, 256, 3, 1, 1, padding_mode='reflect'),
+        self.l4_encoder = nn.Sequential(nn.Conv2d(128, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
-        self.l5_encoder = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='reflect'),
+        self.l5_encoder = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
@@ -65,27 +65,27 @@ class UNet(nn.Module):
         self.l5_decoder = nn.Sequential(*[ResBlocks(256) for _ in range(2)])
         
         self.l4_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(384) for _ in range(2)]),
-                                        nn.Conv2d(384, 256, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(384, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
         self.l3_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(320) for _ in range(2)]),
-                                        nn.Conv2d(320, 128, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(320, 128, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(128),
                                         )
         
         self.l2_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(160) for _ in range(2)]),
-                                        nn.Conv2d(160, 64, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(160, 64, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(64),
                                         )
         
         self.l1_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(80) for _ in range(2)]),
-                                        nn.Conv2d(80, 32, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(80, 32, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(32),
                                         )
 
         self.out_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(32) for _ in range(2)]),
-                                        nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
+                                        nn.Conv2d(32, 6, 3, 1, 1, padding_mode='replicate'))
         
 
         self.conv_A = nn.Sequential(nn.Conv2d(256, 128, 3, 1, 1),
@@ -155,7 +155,7 @@ class UNet(nn.Module):
         x_padx = ((2**self.num_downs) - (x.size(2)%(2**self.num_downs))) % (2**self.num_downs)
         x_pady = ((2**self.num_downs) - (x.size(3)%(2**self.num_downs))) % (2**self.num_downs)
         x = F.pad(x, [x_pady//2, (x_pady - x_pady//2), 
-                    x_padx // 2, (x_padx - x_padx//2)], mode='reflect')
+                    x_padx // 2, (x_padx - x_padx//2)], mode='replicate')
 
         return x, (x_padx, x_pady)
 
@@ -179,10 +179,10 @@ class UNetBL(nn.Module):
             def __init__(self, channels):
                 super().__init__()
                 conv1 = nn.Sequential(
-                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
+                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate'),
                                     nn.PReLU(channels)
                             )
-                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
+                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate')
                 self.conv = nn.Sequential(conv1, conv2)
 
             def forward(self, x):
@@ -190,23 +190,23 @@ class UNetBL(nn.Module):
 
         self.down = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.l1_encoder = nn.Sequential(nn.Conv2d(3, 32, 3, 2, 1, padding_mode='reflect'),
+        self.l1_encoder = nn.Sequential(nn.Conv2d(3, 32, 3, 2, 1, padding_mode='replicate'),
                                         nn.PReLU(32),
                                         )
 
-        self.l2_encoder = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1, padding_mode='reflect'),
+        self.l2_encoder = nn.Sequential(nn.Conv2d(32, 64, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(64),
                                         )
 
-        self.l3_encoder = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1, padding_mode='reflect'),
+        self.l3_encoder = nn.Sequential(nn.Conv2d(64, 128, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(128),
                                         )
 
-        self.l4_encoder = nn.Sequential(nn.Conv2d(128, 256, 3, 1, 1, padding_mode='reflect'),
+        self.l4_encoder = nn.Sequential(nn.Conv2d(128, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
-        self.l5_encoder = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='reflect'),
+        self.l5_encoder = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
@@ -224,27 +224,27 @@ class UNetBL(nn.Module):
         self.l5_decoder = nn.Sequential(*[ResBlocks(256) for _ in range(2)])
         
         self.l4_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(384) for _ in range(2)]),
-                                        nn.Conv2d(384, 256, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(384, 256, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(256),
                                         )
 
         self.l3_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(320) for _ in range(2)]),
-                                        nn.Conv2d(320, 128, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(320, 128, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(128),
                                         )
         
         self.l2_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(160) for _ in range(2)]),
-                                        nn.Conv2d(160, 64, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(160, 64, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(64),
                                         )
         
         self.l1_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(80) for _ in range(2)]),
-                                        nn.Conv2d(80, 32, 3, 1, 1, padding_mode='reflect'),
+                                        nn.Conv2d(80, 32, 3, 1, 1, padding_mode='replicate'),
                                         nn.PReLU(32),
                                         )
 
         self.out_decoder = nn.Sequential(nn.Sequential(*[ResBlocks(32) for _ in range(2)]),
-                                        nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
+                                        nn.Conv2d(32, 6, 3, 1, 1, padding_mode='replicate'))
         
 
         self.conv_A = nn.Sequential(nn.Conv2d(256, 128, 3, 1, 1),
@@ -314,7 +314,7 @@ class UNetBL(nn.Module):
         x_padx = ((2**self.num_downs) - (x.size(2)%(2**self.num_downs))) % (2**self.num_downs)
         x_pady = ((2**self.num_downs) - (x.size(3)%(2**self.num_downs))) % (2**self.num_downs)
         x = F.pad(x, [x_pady//2, (x_pady - x_pady//2), 
-                    x_padx // 2, (x_padx - x_padx//2)], mode='reflect')
+                    x_padx // 2, (x_padx - x_padx//2)], mode='replicate')
 
         return x, (x_padx, x_pady)
 
@@ -334,24 +334,24 @@ class ResNet_NoNorm(nn.Module):
         self.num_downs = 3
         self.downscale = 2**self.num_downs
 
-        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='reflect'), )
-        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='reflect'), nn.LeakyReLU(),)
-        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'), nn.LeakyReLU(),)   
-        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'),)
-        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='reflect'), nn.LeakyReLU(),)
-        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='reflect'),)
+        self.conv1_1 = nn.Sequential(nn.Conv2d(3, 32, 3, 1, 1, padding_mode='replicate'), )
+        self.conv2_1 = nn.Sequential(nn.Conv2d(32, 64, 3, 2, 1, padding_mode='replicate'), nn.LeakyReLU(),)
+        self.conv2_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='replicate'), nn.LeakyReLU(),)   
+        self.conv2_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='replicate'),)
+        self.conv3_1 = nn.Sequential(nn.Conv2d(64, 128, 3, 2, 1, padding_mode='replicate'), nn.LeakyReLU(),)
+        self.conv3_2 = nn.Sequential(nn.Conv2d(128, 128, 3, 1, 1, padding_mode='replicate'),)
 
-        self.conv3_3 = nn.Sequential(nn.Conv2d(128, 256, 3, 2, 1, padding_mode='reflect'), nn.LeakyReLU(),)
-        self.conv3_4 = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='reflect'),)
+        self.conv3_3 = nn.Sequential(nn.Conv2d(128, 256, 3, 2, 1, padding_mode='replicate'), nn.LeakyReLU(),)
+        self.conv3_4 = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='replicate'),)
 
         class ResBlocks(nn.Module):
             def __init__(self, channels):
                 super().__init__()
                 conv1 = nn.Sequential(
-                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect'),
+                                    nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate'),
                                     nn.LeakyReLU()
                             )
-                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='reflect')
+                conv2 = nn.Conv2d(channels, channels, 3, 1, 1, padding_mode='replicate')
                 self.conv = nn.Sequential(conv1, conv2)
 
             def forward(self, x):
@@ -362,16 +362,16 @@ class ResNet_NoNorm(nn.Module):
         
         self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
 
-        self.conv4_1 = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='reflect'))
-        self.conv4_2 = nn.Sequential(nn.Conv2d(256, 128, 3, 1, 1, padding_mode='reflect'))
-        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='reflect'),)
+        self.conv4_1 = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1, padding_mode='replicate'))
+        self.conv4_2 = nn.Sequential(nn.Conv2d(256, 128, 3, 1, 1, padding_mode='replicate'))
+        self.conv5_1 = nn.Sequential(nn.Conv2d(128, 64, 3, 1, 1, padding_mode='replicate'),)
         self.relu5_1 = nn.LeakyReLU()
-        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'),nn.LeakyReLU())
-        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='reflect'),nn.LeakyReLU())
-        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='reflect'),)
+        self.conv5_2 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='replicate'),nn.LeakyReLU())
+        self.conv5_3 = nn.Sequential(nn.Conv2d(64, 64, 3, 1, 1, padding_mode='replicate'),nn.LeakyReLU())
+        self.conv6_1 = nn.Sequential(nn.Conv2d(64, 32, 3, 1, 1, padding_mode='replicate'),)
         self.relu6_1 = nn.LeakyReLU()
-        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='reflect'), nn.LeakyReLU())
-        self.conv6_3 = nn.Sequential(nn.Conv2d(32, 6, 3, 1, 1, padding_mode='reflect'))
+        self.conv6_2 = nn.Sequential(nn.Conv2d(32, 32, 3, 1, 1, padding_mode='replicate'), nn.LeakyReLU())
+        self.conv6_3 = nn.Sequential(nn.Conv2d(32, 6, 3, 1, 1, padding_mode='replicate'))
 
         self.sigmoid = nn.Sigmoid() # for T and A
 
@@ -391,7 +391,7 @@ class ResNet_NoNorm(nn.Module):
         x_padx = ((self.downscale) - (x.size(2)%(self.downscale))) % (self.downscale)
         x_pady = ((self.downscale) - (x.size(3)%(self.downscale))) % (self.downscale)
         x = F.pad(x, [x_pady//2, (x_pady - x_pady//2), 
-                    x_padx // 2, (x_padx - x_padx//2)], mode='reflect')
+                    x_padx // 2, (x_padx - x_padx//2)], mode='replicate')
 
         return x, (x_padx, x_pady)
 

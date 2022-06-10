@@ -12,9 +12,9 @@ class LocalVariance(torch.nn.Module):
         self.register_buffer('kernel', kernel)
 
     def forward(self, x):
-        E_x = torch.nn.functional.conv2d(torch.nn.functional.pad(x, self.pad, mode='reflect'), self.kernel, stride=1)
+        E_x = torch.nn.functional.conv2d(torch.nn.functional.pad(x, self.pad, mode='replicate'), self.kernel, stride=1)
         E_x2 = torch.pow(E_x, 2)
-        E2_x = torch.nn.functional.conv2d(torch.nn.functional.pad(torch.pow(x, 2), self.pad, mode='reflect'), self.kernel, stride=1)
+        E2_x = torch.nn.functional.conv2d(torch.nn.functional.pad(torch.pow(x, 2), self.pad, mode='replicate'), self.kernel, stride=1)
         var_x = E2_x - E_x2
         return torch.clamp(var_x, min=1e-7)
 
@@ -28,4 +28,4 @@ class BoxBlur(torch.nn.Module):
         self.register_buffer('kernel', kernel)
     
     def forward(self, x):
-        return torch.nn.functional.conv2d(torch.nn.functional.pad(x, self.pad, mode='reflect'), self.kernel, stride=1)
+        return torch.nn.functional.conv2d(torch.nn.functional.pad(x, self.pad, mode='replicate'), self.kernel, stride=1)
