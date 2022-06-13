@@ -234,3 +234,42 @@ class RESIDEStandardPairedDataset(torch.utils.data.Dataset):
         return len(self.img_set)
 
 
+
+class RESIDEStandardTestDataset(torch.utils.data.Dataset):
+    '''
+    Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
+    '''
+    def __init__(self, root, mode='val', ratio = 0.1, patch_size=128):
+        assert os.path.isdir(root)
+        self.patch_size = patch_size
+
+        dir2 = os.path.join(root, 'test', 'SOTS', 'indoor', 'hazy')
+
+        img_set2 = [os.path.join(dir2, fn) for fn in os.listdir(dir2) if any(fn.endswith(EXT) for EXT in IMG_EXT)]
+        
+        img_set = img_set2
+        img_set = sorted(img_set)
+        num_img = len(img_set)
+
+        self.img_set = img_set
+
+        print(f'Dataset built - length {len(self.img_set)}')
+
+        self.transform = torchvision.transforms.Compose([
+                            torchvision.transforms.ToTensor(),
+            ])
+
+    def __getitem__(self, index):
+        img = Image.open(self.img_set[index]).convert("RGB")
+        clear_img_name = self.img_set[index].split('/')[:-2] + ['gt'] + [self.img_set[index].split('/')[-1].split("_")[0]+".png"]
+        clear_img_name = "/"+os.path.join(*clear_img_name)
+        clear_img = Image.open(clear_img_name).convert("RGB")
+
+        img = self.transform(img)
+        clear_img = self.transform(clear_img)
+        return img, clear_img, self.img_set[index]
+
+    def __len__(self):
+        return len(self.img_set)
+
+

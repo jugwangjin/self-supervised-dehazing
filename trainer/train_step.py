@@ -273,3 +273,48 @@ class TrainStep_weighted(TrainStep):
                 self.lambdas["T_gray"] * self.Sl1(T - T.mean(dim=1, keepdim=True)) +\
                 self.lambdas["J_idt"] * self.Sl1((J - img) * dcp)
         return L_reg
+
+
+
+class TrainStep_refined(TrainStep):
+    def __init__(self, f, args):
+        super().__init__(f, args)
+
+
+    def recon_loss(self, T, A, J, img):
+        
+        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
+        dcp = self.dcp(img, A_)
+
+        L_recon = self.Sl1(img - (J * T + A * (1 - T))) + self.Sl1(img - (J * dcp + A_ * (1 - dcp)))
+        return L_recon
+
+    def prior_loss(self, T, A, J, img):
+        J_s, J_v = self.get_sv(J)
+        img_s, img_v = self.get_sv(img)
+
+        J_uv = self.get_uv(J)
+        img_uv = self.get_uv(img)
+        
+        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
+        dcp = self.dcp(img, A_)
+        
+        L_prior = self.lambdas["T_DCP"] * self.Sl1((self.large_boxblur(T) - self.large_boxblur_1(dcp)) * dcp) + \
+                self.lambdas["J_TV"] * self.Sl1(self.TV(J)) +\
+                self.lambdas["J_pixel_intensity"] * self.Sl1(J - img) +\
+                self.lambdas["J_value"] * self.Sl1(J_v - img_v) +\
+                self.lambdas["J_saturation"] * self.Sl1(img_s - J_s) +\
+                self.lambdas["J_hue"] * self.Sl1(J_uv - img_uv) +\
+                self.lambdas["J_var"] * self.Sl1(self.var(img) - self.var(J))
+
+        return L_prior
+
+    def regularization_loss(self, T, A, J, img):
+
+        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
+        dcp = self.dcp(img, A_)
+        L_reg = self.lambdas["A_hint"] * self.Sl1(A - torch.amax(img, dim=(2,3), keepdim=True)) + \
+                self.lambdas["T_smooth"] * self.Sl1(T - self.blur(T)) +\
+                self.lambdas["T_gray"] * self.Sl1(T - T.mean(dim=1, keepdim=True)) +\
+                self.lambdas["J_idt"] * self.Sl1((J - img) * dcp)
+        return L_reg

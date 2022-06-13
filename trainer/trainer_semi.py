@@ -45,18 +45,21 @@ class Trainer(torch.nn.Module):
         
         self.saver = getattr(saver, self.args["saver"])()
 
+        if ["patchsize"] not in self.args["patchsize"]:
+            self.args["patchsize"] = 128
+
         train_dataset_module = getattr(dataset, self.args["traindataset"])
         train_paired_dataset_module = getattr(dataset, self.args["trainpaireddataset"])
         val_dataset_module = getattr(dataset, self.args["valdataset"])
 
-        train_dataset = train_dataset_module(root=args["dataroot"], mode='train', )
+        train_dataset = train_dataset_module(root=args["dataroot"], mode='train', patch_size=self.args["patchsize"])
         g = torch.Generator()
         g.manual_seed(args["seed"])
         self.train_loader = torch.utils.data.DataLoader(train_dataset, args["batchsize"], shuffle=True, num_workers=args["numworkers"],
                                             pin_memory=args["pinmemory"], 
                                             worker_init_fn = seed_worker, generator=g, drop_last=True)
 
-        paired_train_dataset = train_paired_dataset_module(root=args["dataroot"], mode='val')
+        paired_train_dataset = train_paired_dataset_module(root=args["dataroot"], mode='val', patch_size=self.args["patchsize"])
         g = torch.Generator()
         g.manual_seed(args["seed"])
         self.paired_train_loader = torch.utils.data.DataLoader(paired_train_dataset, args["batchsize"], shuffle=True, num_workers=args["numworkers"],
@@ -188,6 +191,16 @@ class Trainer(torch.nn.Module):
             if acc_grad/num_grad > 5:
                 print(desc)
 
+            if batchIdx < 5:
+                T, A, clean = f(img)
+                rec = clean * T + A * (1 - T)
+                torchvision.utils.save_image(clean[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_clean.png'))
+                torchvision.utils.save_image(img[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_img.png'))
+                torchvision.utils.save_image(T[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_T.png'))
+                torchvision.utils.save_image(A[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_A.png'))
+                torchvision.utils.save_image(rec[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_reconstuct.png'))
+    
+    
         return accum_losses / num_samples
 
     @torch.no_grad()

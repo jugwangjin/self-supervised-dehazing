@@ -117,6 +117,55 @@
             "valdataset": "RESIDEStandardDataset",
             "traindataset": "RESIDEStandardDataset",
             "loss": "sl1"
+        },
+
+
+        "reside_unetbl_nb_refined":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+
+        "reside_unetbl_nb_refined_patch256":
+        {
+            "epochs": 1000,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1",
+            "patchsize": 256
         }
     },
 
@@ -200,8 +249,26 @@
                 "J_hue": 1e-2,
                 "J_idt": 1e-1,
                 "J_var": 1
+        },
+        
+        "refined":
+        {
+                "recon": 1,
+                "aug": 0.1,
+                "T_DCP": 1,
+                "J_TV": 1,
+                "J_pixel_intensity": 1e-2,
+                "A_hint": 1e-1,
+                "T_gray": 1e-1,
+                "T_smooth": 1e-1,
+                "clean": 0.1,
+                "T_zero": 0.1,
+                "J_value": 1e-2,
+                "J_saturation":1e-2,
+                "J_hue": 1e-2,
+                "J_idt": 1e-2,
+                "J_var": 1
         }
-    
         
     }
 }
