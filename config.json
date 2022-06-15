@@ -451,9 +451,31 @@
             "valdataset": "RealHazyDataset",
             "traindataset": "RealHazyDataset",
             "loss": "l1"
+        },
+
+        "merged_unetbl_nb_refined_nb_l1":
+        {
+            "epochs": 100,
+            "lr": 1e-5,
+            "batchsize": 64,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 1,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "l1"
         }
-
-
+        
 
     },
 
@@ -600,18 +622,18 @@
         {
                 "recon": 1,
                 "aug": 0.5,
-                "T_DCP": 0.1,
+                "T_DCP": 1,
                 "J_TV": 1,
                 "J_pixel_intensity": 1e-1,
                 "A_hint": 1e-1,
-                "T_gray": 1e-2,
-                "T_smooth": 1e-2,
+                "T_gray": 1e-3,
+                "T_smooth": 1e-3,
                 "clean": 0.25,
                 "T_zero": 0.25,
                 "J_value": 1e-1,
                 "J_saturation":1e-1,
                 "J_hue": 1e-1,
-                "J_idt": 1e-2,
+                "J_idt": 1e-3,
                 "J_var": 1
         }
         

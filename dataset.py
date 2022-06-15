@@ -6,6 +6,7 @@ import random
 import torch
 from torchvision import transforms
 import torchvision.transforms.functional as TF
+from math import ceil
 
 IMG_EXT = ['jpg', 'jpeg', 'JPEG', 'JPG', 'png', 'PNG']
 
@@ -15,7 +16,7 @@ class RESIDEHazyDataset(torch.utils.data.Dataset):
     '''
     Dataset with only RESIDE_beta test set - internet collected unpaired hazy images
     '''
-    def __init__(self, root, mode, patch_size=128):
+    def __init__(self, root, mode, patch_size=128, ratio=1):
         self.TRAIN_VAL_RATIO = 0.999
         assert os.path.isdir(root)
         assert mode in MODES
@@ -35,6 +36,8 @@ class RESIDEHazyDataset(torch.utils.data.Dataset):
         random.shuffle(img_set)
         if mode == 'train':
             img_set = img_set[:split_idx]
+            if ratio < 1:
+                img_set = img_set[:ceil(len(img_set) * ratio)]
         elif mode == 'val':
             img_set = img_set[split_idx:]
 
@@ -273,3 +276,18 @@ class RESIDEStandardTestDataset(torch.utils.data.Dataset):
         return len(self.img_set)
 
 
+
+class MergedDataset(torch.utils.data.Dataset):
+    def __init__(self, root, mode='val', ratio = 0.1, patch_size=128):
+        reside_standart_dataset = RESIDEStandardDataset(root = os.path.join(root, "RESIDE_standard"), mode=mode, patch_size=patch_size)
+        reside_hazy_dataset = RESIDEHazyDataset(root = os.path.join(root, "RESIDE_beta"), mode=mode, patch_size=patch_size, ratio=0.25)
+        real_hazy_dataset = RealHazyDataset(root = os.path.join(root, "RESIDE_beta"), mode=mode, patch_size=patch_size)
+
+        self.dataset = torch.utils.data.ConcatDataset([reside_standart_dataset, reside_hazy_dataset, real_hazy_dataset])
+        print(f'Dataset built - length {len(self.dataset)}, from res_std {len(reside_standart_dataset)}, res_outd {len(reside_hazy_dataset)}, real_hazy {len(real_hazy_dataset)}')
+
+    def __getitem__(self, index):
+        return self.dataset[index]
+
+    def __len__(self):
+        return len(self.dataset)
