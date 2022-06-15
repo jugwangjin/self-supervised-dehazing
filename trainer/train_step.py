@@ -356,18 +356,9 @@ class TrainStep_refined_semi(TrainStep_refined):
 
 
 
-class TrainStep_refined_nb(TrainStep):
+class TrainStep_refined_nb(TrainStep_refined):
     def __init__(self, f, args):
         super().__init__(f, args)
-
-
-    def recon_loss(self, T, A, J, img):
-        
-        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
-        dcp = self.dcp(img, A_)
-
-        L_recon = self.Sl1(img - (J * T + A * (1 - T))) + self.Sl1(img - (J * dcp + A_ * (1 - dcp)))
-        return L_recon
 
     def prior_loss(self, T, A, J, img):
         J_s, J_v = self.get_sv(J)
@@ -389,17 +380,6 @@ class TrainStep_refined_nb(TrainStep):
 
         return L_prior
 
-    def regularization_loss(self, T, A, J, img):
-
-        A_ = torch.amax(img, dim=(2,3), keepdim=True).clamp(min=0.5)
-        dcp = self.dcp(img, A_)
-        L_reg = self.lambdas["A_hint"] * self.Sl1(A - torch.amax(img, dim=(2,3), keepdim=True)) + \
-                self.lambdas["T_smooth"] * self.Sl1(T - self.blur(T)) +\
-                self.lambdas["T_gray"] * self.Sl1(T - T.mean(dim=1, keepdim=True)) +\
-                self.lambdas["J_idt"] * self.Sl1((J - img) * dcp)
-        return L_reg
-
-
 
 class TrainStep_refined_nb_semi(TrainStep_refined_nb):
     def __init__(self, f, args):
@@ -408,7 +388,7 @@ class TrainStep_refined_nb_semi(TrainStep_refined_nb):
 
     def recon_loss(self, T, A, J, img, clear_img=None):
         if clear_img is None:
-            L_recon = self.Sl1(img - (J * T + A * (1 - T)))
+            L_recon = super().recon_loss(T, A, J, img)
         else:
             L_recon = self.Sl1(img - (clear_img * T + A * (1 - T))) + self.Sl1(J - clear_img)
         return L_recon

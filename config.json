@@ -474,7 +474,32 @@
             "valdataset": "MergedDataset",
             "traindataset": "MergedDataset",
             "loss": "l1"
+        },
+
+        "merged_unetbl_nb_refined_nb_l1_256":
+        {
+            "epochs": 100,
+            "lr": 1e-5,
+            "batchsize": 16,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 1,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "l1",
+            "patchsize": 256
         }
+        
         
 
     },
@@ -617,7 +642,6 @@
                 "J_idt": 1e-2,
                 "J_var": 1
         },
-        
         "refinedv4":
         {
                 "recon": 1,
@@ -636,6 +660,5 @@
                 "J_idt": 1e-3,
                 "J_var": 1
         }
-        
     }
 }

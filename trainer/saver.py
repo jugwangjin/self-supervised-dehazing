@@ -13,6 +13,18 @@ class SaveAMap():
     def __str(self):
         print("Saver with A Map")
 
+    def get_uv(self, img):
+        r = img[:, 0:1]
+        g = img[:, 1:2]
+        b = img[:, 2:3]
+
+        delta = 0.5
+        y = 0.299 * r + 0.587 * g + 0.114 * b
+        u = (b - y) * 0.564 + delta
+        v = (r - y) * 0.713 + delta
+
+        return torch.cat((u, v, torch.zeros_like(u)), dim=1)
+
     def h(self, img):
         hue = torch.Tensor(img.shape[0], img.shape[2], img.shape[3]).to(img.device)
 
@@ -47,6 +59,10 @@ class SaveAMap():
         dcp = 1 - torch.amin(min_patch, dim=1, keepdim=True)
         dcp = dcp.clamp(0, 1)
 
+        J_uv = self.get_uv(clean)
+        img_uv = self.get_uv(img)
+
+
         torchvision.utils.save_image(clean[idx], os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_clean.png'))
         torchvision.utils.save_image(img[idx], os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_img.png'))
         torchvision.utils.save_image(T[idx], os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_T.png'))
@@ -55,9 +71,11 @@ class SaveAMap():
         torchvision.utils.save_image(J_HSV_S[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_clean_S.png'))
         torchvision.utils.save_image(J_HSV_V[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_clean_V.png'))
         torchvision.utils.save_image(J_HSV_H[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_clean_H.png'))
+        torchvision.utils.save_image(J_uv[idx], os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_clean_uv.png'))
         torchvision.utils.save_image(img_HSV_S[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_img_S.png'))
         torchvision.utils.save_image(img_HSV_V[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_img_V.png'))
         torchvision.utils.save_image(img_HSV_H[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_img_H.png'))
+        torchvision.utils.save_image(img_uv[idx], os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_img_uv.png'))
         torchvision.utils.save_image(dcp[idx].repeat(3,1,1), os.path.join(out_dir, 'results', f'{batchIdx * valbatchsize + idx}_dcp.png'))
     
     
