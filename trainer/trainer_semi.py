@@ -23,9 +23,8 @@ import importlib
 torch.manual_seed(20202464)
 
 def seed_worker(worker_id):
-    worker_seed = torch.initial_seed() % 2**32
-    numpy.random.seed(worker_seed)
-    random.seed(worker_seed)
+    numpy.random.seed(20202464)
+    random.seed(20202464)
 
 class Trainer(torch.nn.Module):
     def __init__(self, args):
@@ -45,7 +44,7 @@ class Trainer(torch.nn.Module):
         
         self.saver = getattr(saver, self.args["saver"])()
 
-        if ["patchsize"] not in self.args["patchsize"]:
+        if "patchsize" not in self.args:
             self.args["patchsize"] = 128
 
         train_dataset_module = getattr(dataset, self.args["traindataset"])
@@ -79,6 +78,7 @@ class Trainer(torch.nn.Module):
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'results'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'checkpoints'), exist_ok=True)
+        os.makedirs(os.path.join(self.out_dir, 'training_samples'), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, 'codes'), exist_ok=True)
         shutil.copy(os.path.join('model', 'model.py'), os.path.join(self.out_dir, 'codes', 'model.py'))
         shutil.copy(os.path.join('trainer', 'train_step.py'), os.path.join(self.out_dir, 'codes', 'train_step.py'))
@@ -192,13 +192,15 @@ class Trainer(torch.nn.Module):
                 print(desc)
 
             if batchIdx < 5:
+                trainer = self.trainer.module if self.args["usedataparallel"] else self.trainer
+                f = trainer.f
                 T, A, clean = f(img)
                 rec = clean * T + A * (1 - T)
-                torchvision.utils.save_image(clean[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_clean.png'))
-                torchvision.utils.save_image(img[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_img.png'))
-                torchvision.utils.save_image(T[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_T.png'))
-                torchvision.utils.save_image(A[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_A.png'))
-                torchvision.utils.save_image(rec[0], os.path.join(out_dir, 'training_samples', f'{batchIdx}_reconstuct.png'))
+                torchvision.utils.save_image(clean[0], os.path.join(self.out_dir, 'training_samples', f'{batchIdx}_clean.png'))
+                torchvision.utils.save_image(img[0], os.path.join(self.out_dir, 'training_samples', f'{batchIdx}_img.png'))
+                torchvision.utils.save_image(T[0], os.path.join(self.out_dir, 'training_samples', f'{batchIdx}_T.png'))
+                torchvision.utils.save_image(A[0], os.path.join(self.out_dir, 'training_samples', f'{batchIdx}_A.png'))
+                torchvision.utils.save_image(rec[0], os.path.join(self.out_dir, 'training_samples', f'{batchIdx}_reconstuct.png'))
     
     
         return accum_losses / num_samples

@@ -105,7 +105,7 @@ def main (args):
     
             prog_bar.set_description(f'psnr {to_psnr(J, clear)} ssmi {to_ssim_skimage(J, clear)}, run {elapsed} ')
 
-            outfile.write(f'batch {batchIdx} ({img_name[0].split("/")[-1]}),  psnr {to_psnr(J, clear)[0]},  ssmi {to_psnr(J, clear)[0]}\n')
+            outfile.write(f'batch {batchIdx} ({img_name[0].split("/")[-1]}),  psnr {to_psnr(J, clear)[0]},  ssmi {to_ssim_skimage(J, clear)[0]}\n')
 
         avr_psnr = sum(psnr_list) / len(psnr_list)
         avr_ssim = sum(ssim_list) / len(ssim_list) 
@@ -138,6 +138,7 @@ if __name__=='__main__':
     else:
         args["outdir"] = os.path.join("/Jarvis/workspace/gwangjin/dehazing/cvf-results/", args["config"], args["config_lambda"])
         args["dataroot"] = os.path.join("/data1/gwangjin/dehazing_bench/RESIDE_standard")
+        args["dataroot"] = os.path.join("/Bean/data/gwangjin/RESIDE_standard")
 
 
     print(args)

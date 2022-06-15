@@ -23,9 +23,8 @@ import importlib
 torch.manual_seed(20202464)
 
 def seed_worker(worker_id):
-    worker_seed = torch.initial_seed() % 2**32
-    numpy.random.seed(worker_seed)
-    random.seed(worker_seed)
+    numpy.random.seed(20202464)
+    random.seed(20202464)
 
 class Trainer(torch.nn.Module):
     def __init__(self, args):
@@ -45,7 +44,7 @@ class Trainer(torch.nn.Module):
         
         self.saver = getattr(saver, self.args["saver"])()
 
-        if ["patchsize"] not in self.args["patchsize"]:
+        if "patchsize" not in self.args:
             self.args["patchsize"] = 128
 
         train_dataset_module = getattr(dataset, self.args["traindataset"])

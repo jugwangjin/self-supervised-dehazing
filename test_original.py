@@ -80,7 +80,7 @@ def main (args):
     
             prog_bar.set_description(f'psnr {to_psnr(hazy, clear)} ssmi {to_ssim_skimage(hazy, clear)}')
 
-            outfile.write(f'batch {batchIdx} ({img_name[0].split("/")[-1]}),  psnr {to_psnr(hazy, clear)[0]},  ssmi {to_psnr(hazy, clear)[0]}\n')
+            outfile.write(f'batch {batchIdx} ({img_name[0].split("/")[-1]}),  psnr {to_psnr(hazy, clear)[0]},  ssmi {to_ssim_skimage(hazy, clear)[0]}\n')
 
         avr_psnr = sum(psnr_list) / len(psnr_list)
         avr_ssim = sum(ssim_list) / len(ssim_list) 
