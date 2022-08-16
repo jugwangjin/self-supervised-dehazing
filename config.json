@@ -384,29 +384,6 @@
 
 
 
-        "reside_unetbl_nb_refined_nb_l1":
-        {
-            "epochs": 1000,
-            "lr": 1e-5,
-            "batchsize": 64,
-            "valbatchsize": 1,
-            "numworkers": 4,
-            "pinmemory": true,
-            "seed": 20202464,
-            "dataroot": "RESIDE_standard",
-            "device": "cuda",
-            "usedataparallel": true,
-            "validateevery": 5,
-            "scheduler_step": 1,
-            "trainer": "trainer",
-            "model": "UNetBL_NB",
-            "trainstep": "TrainStep_refined_nb",
-            "saver": "SaveAConst",
-            "valdataset": "RESIDEStandardDataset",
-            "traindataset": "RESIDEStandardDataset",
-            "loss": "l1"
-        },
-
         "reside_resnetsmall_refined_nb_l1":
         {
             "epochs": 1000,
@@ -453,28 +430,6 @@
             "loss": "l1"
         },
 
-        "merged_unetbl_nb_refined_nb_l1":
-        {
-            "epochs": 100,
-            "lr": 1e-5,
-            "batchsize": 64,
-            "valbatchsize": 1,
-            "numworkers": 4,
-            "pinmemory": true,
-            "seed": 20202464,
-            "dataroot": "",
-            "device": "cuda",
-            "usedataparallel": true,
-            "validateevery": 1,
-            "scheduler_step": 1,
-            "trainer": "trainer",
-            "model": "UNetBL_NB",
-            "trainstep": "TrainStep_refined_nb",
-            "saver": "SaveAConst",
-            "valdataset": "MergedDataset",
-            "traindataset": "MergedDataset",
-            "loss": "l1"
-        },
 
         "merged_unetbl_nb_refined_nb_l1_256":
         {
@@ -502,8 +457,424 @@
         
         
 
-    },
 
+        ,
+        
+
+
+
+        "reside_resnetsmall_refined_nb_sl1":
+        {
+            "epochs": 1000,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "ResNet_Small",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        "realhaze_unetbl_nb_refined_nb_sl1":
+        {
+            "epochs": 1000,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_beta",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "RealHazyDataset",
+            "traindataset": "RealHazyDataset",
+            "loss": "sl1"
+        },
+
+
+        "merged_unetbl_nb_refined_nb_sl1_256":
+        {
+            "epochs": 100,
+            "lr": 1e-5,
+            "batchsize": 16,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 1,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "sl1",
+            "patchsize": 256
+        },
+
+        
+
+        "reside_unetbl_less_prior":
+        {
+            "epochs": 1000,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_less_prior",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        
+
+        "reside_unetbl_less_prior_l1":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_less_prior",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "l1"
+        },
+
+        
+        "merged_unetbl_nb_refined_nb_l1":
+        {
+            "epochs": 200,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 2,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "l1"
+        },
+
+        "reside_unetbl_nb_refined_nb_l1":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "l1"
+        },
+
+
+        
+        "reside_unetbl_less_prior_sl1":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_less_prior",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        
+        "merged_unetbl_nb_refined_nb_sl1":
+        {
+            "epochs": 200,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 2,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "sl1"
+        },
+
+        "reside_unetbl_nb_refined_nb_sl1":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        }
+
+
+        ,
+
+        
+        "reside_unetbl_less_prior_sl1_NW":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_less_prior_NW",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        
+        "merged_unetbl_nb_refined_nb_sl1_NW":
+        {
+            "epochs": 200,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 2,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb_NW",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "sl1"
+        },
+
+        "reside_unetbl_nb_refined_nb_sl1_NW":
+        {
+            "epochs": 500,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb_NW",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        }
+        
+
+        ,
+
+        
+        "reside_unetbl_less_prior_sl1_NW_W":
+        {
+            "epochs": 500,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_less_prior_NW_W",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        
+        "merged_unetbl_nb_refined_nb_sl1_NW_W":
+        {
+            "epochs": 200,
+            "lr": 1e-4,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 2,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb_NW_W",
+            "saver": "SaveAConst",
+            "valdataset": "MergedDataset",
+            "traindataset": "MergedDataset",
+            "loss": "sl1"
+        },
+
+        "reside_unetbl_nb_refined_nb_sl1_NW_W":
+        {
+            "epochs": 500,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_refined_nb_NW_W",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        },
+
+        "reside_no_dcp":
+        {
+            "epochs": 500,
+            "lr": 1e-5,
+            "batchsize": 32,
+            "valbatchsize": 1,
+            "numworkers": 4,
+            "pinmemory": true,
+            "seed": 20202464,
+            "dataroot": "RESIDE_standard",
+            "device": "cuda",
+            "usedataparallel": true,
+            "validateevery": 5,
+            "scheduler_step": 1,
+            "trainer": "trainer",
+            "model": "UNetBL_NB",
+            "trainstep": "TrainStep_NO_DCP",
+            "saver": "SaveAConst",
+            "valdataset": "RESIDEStandardDataset",
+            "traindataset": "RESIDEStandardDataset",
+            "loss": "sl1"
+        }
+    },
+    
     "lambdas":
     {
         "baseline":
@@ -645,20 +1016,178 @@
         "refinedv4":
         {
                 "recon": 1,
-                "aug": 0.5,
+                "aug": 1,
+                "T_DCP": 1e-1,
+                "J_TV": 1e-2,
+                "J_pixel_intensity": 1e-2,
+                "A_hint": 1e-2,
+                "T_gray": 1e-2,
+                "T_smooth": 1e-2,
+                "clean": 0.5,
+                "T_zero": 0.5,
+                "J_value": 1e-2,
+                "J_saturation":1e-2,
+                "J_hue": 1e-2,
+                "J_idt": 1e-3,
+                "J_var": 1
+        },
+        "refinedv5":
+        {
+                "recon": 1,
+                "aug": 0.1,
+                "T_DCP": 1e-1,
+                "J_TV": 1e-2,
+                "J_pixel_intensity": 1e-2,
+                "A_hint": 1e-2,
+                "T_gray": 1,
+                "T_smooth": 1,
+                "clean": 0.1,
+                "T_zero": 0.1,
+                "J_value": 1e-2,
+                "J_saturation":1e-2,
+                "J_hue": 1e-2,
+                "J_idt": 1e-1,
+                "J_var": 1
+        },
+        "refinedv6":
+        {
+                "recon": 1,
+                "aug": 0.1,
                 "T_DCP": 1,
-                "J_TV": 1,
+                "J_TV": 1e-1,
                 "J_pixel_intensity": 1e-1,
-                "A_hint": 1e-1,
-                "T_gray": 1e-3,
-                "T_smooth": 1e-3,
-                "clean": 0.25,
-                "T_zero": 0.25,
+                "A_hint": 1,
+                "T_gray": 1,
+                "T_smooth": 1,
+                "clean": 0.1,
+                "T_zero": 0.1,
                 "J_value": 1e-1,
                 "J_saturation":1e-1,
                 "J_hue": 1e-1,
-                "J_idt": 1e-3,
+                "J_idt": 1e-1,
                 "J_var": 1
+        },
+        "less_prior":
+        {
+                "recon": 1,
+                "aug": 0.1,
+                "T_DCP": 1e-1,
+                "J_TV": 1e-2,
+                "J_pixel_intensity": 0,
+                "A_hint": 1e-1,
+                "T_gray": 1,
+                "T_smooth": 1,
+                "clean": 0.1,
+                "T_zero": 0.1,
+                "J_value": 0,
+                "J_saturation":0,
+                "J_hue": 0,
+                "J_idt": 1e-1,
+                "J_var": 0
+        },
+        "less_prior2":
+        {
+                "recon": 1,
+                "aug": 0.1,
+                "T_DCP": 1,
+                "J_TV": 1e-1,
+                "J_pixel_intensity": 0,
+                "A_hint": 1,
+                "T_gray": 1,
+                "T_smooth": 1,
+                "clean": 0.1,
+                "T_zero": 0.1,
+                "J_value": 0,
+                "J_saturation":0,
+                "J_hue": 0,
+                "J_idt": 1e-1,
+                "J_var": 0
+        },
+        "refinedv7":
+        {
+                "recon": 1,
+                "aug": 1,
+                "T_DCP": 1,
+                "J_TV": 1,
+                "J_pixel_intensity": 1,
+                "A_hint": 1,
+                "T_gray": 1,
+                "T_smooth": 1,
+                "clean": 1,
+                "T_zero": 1,
+                "J_value": 1,
+                "J_saturation":1,
+                "J_hue": 1,
+                "J_idt": 1e-1,
+                "J_var": 1
+        },
+        "less_prior3":
+        {
+            "recon": 1,
+            "aug": 1,
+            "T_DCP": 1,
+            "J_TV": 1,
+            "J_pixel_intensity": 1,
+            "A_hint": 1,
+            "T_gray": 1,
+            "T_smooth": 1,
+            "clean": 1,
+            "T_zero": 1,
+            "J_value": 1,
+            "J_saturation":1,
+            "J_hue": 1,
+            "J_idt": 1e-1,
+            "J_var": 1
+        },
+        "refinedv8":
+        {
+            "recon": 1,
+            "aug": 0.1,
+            "T_DCP": 0.1,
+            "J_TV": 0.1,
+            "J_pixel_intensity": 1e-2,
+            "A_hint": 1,
+            "T_gray": 1e-2,
+            "T_smooth": 1e-2,
+            "clean": 1e-2,
+            "J_value": 1e-2,
+            "J_saturation":1e-2,
+            "J_hue": 1e-2,
+            "J_idt": 1e-2,
+            "J_var": 0.1
+        },
+        "less_prior4":
+        {
+            "recon": 1,
+            "aug": 0.1,
+            "T_DCP": 0.1,
+            "J_TV": 0.1,
+            "J_pixel_intensity": 1e-2,
+            "A_hint": 1,
+            "T_gray": 1e-2,
+            "T_smooth": 1e-2,
+            "clean": 1e-2,
+            "J_value": 1e-2,
+            "J_saturation":1e-2,
+            "J_hue": 1e-2,
+            "J_idt": 1e-2,
+            "J_var": 0.1
+        },
+        "no_dcp":
+        {
+            "recon": 1,
+            "aug": 0.1,
+            "J_TV": 0.1,
+            "J_pixel_intensity": 1e-2,
+            "A_hint": 1,
+            "T_gray": 1e-2,
+            "T_smooth": 1e-2,
+            "clean": 1e-2,
+            "J_value": 1e-2,
+            "J_saturation":1e-2,
+            "J_hue": 1e-2,
+            "J_idt": 1e-2,
+            "J_var": 0.1
         }
     }
 }

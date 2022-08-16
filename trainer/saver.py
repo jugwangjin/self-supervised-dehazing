@@ -7,7 +7,7 @@ import torchvision
 class SaveAMap():
     def __init__(self):
         self.eps = 1e-7
-        self.maxpool = torch.nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=1, stride=1, padding=0)
         pass
     
     def __str(self):

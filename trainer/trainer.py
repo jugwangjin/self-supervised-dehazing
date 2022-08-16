@@ -38,7 +38,9 @@ class Trainer(torch.nn.Module):
         self.trainer = torch.nn.DataParallel(trainer(f, args).to(args["device"])) if args["usedataparallel"] else trainer(f, args).to(args["device"])
         
         self.optimizer = torch.optim.Adam(self.trainer.module.f.parameters() if args["usedataparallel"]
-                                        else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-9, amsgrad=True)
+                                        else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-3, amsgrad=True)
+        # self.optimizer = torch.optim.RAdam(self.trainer.module.f.parameters() if args["usedataparallel"]
+        #                                 else self.trainer.f.parameters(), lr=args["lr"], weight_decay=1e-3)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args["scheduler_step"], gamma=0.99)
         self.epochs = args["epochs"]
         
@@ -112,6 +114,7 @@ class Trainer(torch.nn.Module):
                             os.path.join(self.out_dir, 'checkpoints', 'best_val.tar'))
 
             plt.clf()
+            # plt.ylim(0, 0.5)
             plt.plot(train_losses, label='train')
             plt.plot(validation_losses, label='validation')
             plt.legend()

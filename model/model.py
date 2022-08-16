@@ -534,6 +534,12 @@ class UNetBL_NB(nn.Module):
 
         self.sigmoid = nn.Sigmoid()
 
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+               nn.init.xavier_uniform(m.weight, gain=0.1)
+               nn.init.constant(m.bias, 0)
+
+
     def forward(self, x):
         x, pad = self.pad(x)
 
@@ -842,3 +848,15 @@ class ResNet_Small(nn.Module):
         A = self.conv_A(resblocks_out)
 
         return T, A, J
+
+
+
+        
+
+
+
+
+        
+
+
+

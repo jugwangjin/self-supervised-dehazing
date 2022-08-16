@@ -96,6 +96,8 @@ def main (args):
 
             T, A, J = f(hazy)
 
+            J = J.clamp(0, 1)
+
             elapsed = time.process_time() - start
             elapsed_time += elapsed
             num_running += 1
